@@ -283,6 +283,29 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
 .hline.un{border-color:var(--warn)}
 .photo-chip{font-size:12px;padding:4px 10px;border-radius:12px;background:var(--bg);border:1px dashed var(--line);color:var(--muted)}
 .seg.on-ok{border-color:var(--ok);color:var(--ok)}
+/* 고객 보기 */
+.cv{max-width:1180px;margin:0 auto;padding-block:22px 40px}
+.cv-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.cv-site{font-size:15px;color:var(--navy);font-weight:600}
+.cv h1{font-size:34px;color:var(--ink)} .cv h1 span{font-size:20px;color:var(--muted);font-weight:500}
+.cv-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px;margin-top:18px}
+@media (max-width:900px){.cv-grid{grid-template-columns:minmax(0,1fr)}}
+.cv-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+.cv-card h2{font-size:22px;margin-bottom:10px}
+.cv-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:18px}
+.cv-line small{display:block;font-size:14px;color:var(--muted)}
+.cv-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;font-size:18px} .cv-total b{font-size:32px;color:var(--navy)}
+.cv-total.sm{margin-top:6px} .cv-total.sm b{font-size:22px;color:var(--ink)}
+.cv-note,.cv-sub{font-size:14px;color:var(--muted);margin:6px 0 0} .cv-empty{color:var(--muted);font-size:17px}
+.cv-item{padding:14px 0;border-bottom:1px solid var(--line)}
+.cv-ih{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:19px}
+.cv-pct{font-size:16px;color:var(--ok);font-weight:700;font-family:var(--f-num)}
+.cv-bar{height:12px;border-radius:6px;background:var(--ok-soft);margin:8px 0;overflow:hidden} .cv-bar i{display:block;height:100%;background:var(--ok);border-radius:6px}
+.cv-opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cv-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 14px;font-size:15px;text-align:left}
+.cv-opt b{font-size:17px;color:var(--navy)} .cv-opt em{font-style:normal;font-size:13px;color:var(--accent);font-weight:700}
+.cv-opt:active{background:var(--navy-soft)}
+.cv-foot{text-align:center;color:var(--muted);margin-top:18px;font-size:15px}
 
 @page{size:A4;margin:10mm}
 @media print{body{background:#fff;padding:0}#topbar,.toast,.side,.main section.panel,body::before{display:none!important}.main{display:block;margin:0}.papers{overflow:visible;padding:0}.paper{box-shadow:none;border:0;margin:0;width:auto;min-height:0;padding:0;break-after:page}}
@@ -295,7 +318,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v5.1 · 샘플 데이터</span>
+      <span class="sample">검토용 시안 v5.2 · 샘플 데이터</span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
     </div>
@@ -434,7 +457,7 @@ const LEDGER=[], VISITS=[], ORIG={}, OWNER={}, HIST=[], OPHOTO={};
 let queueSeq=2;
 
 /* ===== 상태 ===== */
-const blank=()=>({step:0,dong:"",ho:"",sel:{},cust:{name:"",phone:"",birth:"",addr:"",addrDetail:"",zip:"",cash:""},consent1:false,consent2:false,paid:{},addrOpen:false,addrQ:"",printed:false,signedPhoto:false,visitId:null,t0:null});
+const blank=()=>({step:0,dong:"",ho:"",sel:{},cust:{name:"",phone:"",birth:"",addr:"",addrDetail:"",zip:"",cash:""},consent1:false,consent2:false,paid:{},addrOpen:false,addrQ:"",printed:false,signedPhoto:false,custView:false,visitId:null,t0:null});
 const st={view:"guest",user:null,role:null,desk:1,pin:"",pick:"",statusDay:"all",cv:null,guestMode:false,gdone:false,
   g:{unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:"self",paperNo:""},...blank()};
 const unitKey=()=>st.dong&&st.ho?st.dong+"-"+st.ho:"";
@@ -460,6 +483,7 @@ function render(){
   $("#siteLabel").textContent=S.siteName+" ("+S.siteCode+")";
   const app=$("#app");
   if(st.guestMode){$("#topbar").hidden=true;app.innerHTML=viewGuestPhone();bindGuest(true);return;}
+  if(st.custView&&st.user&&st.view==="contract"&&st.step>=1){$("#topbar").hidden=true;app.innerHTML=viewCustomer();bindCustomer();return;}
   $("#topbar").hidden=false;
   const allowed=st.user?ROLES[st.role]:[];
   $("#tabs").innerHTML=allowed.map(v=>`<button class="tab" data-tab="${v}" aria-pressed="${st.view===v}">${VIEWS[v]}${v==="contract"&&queue().length?` <span class="chip think">${queue().length}</span>`:""}</button>`).join("");
@@ -648,6 +672,7 @@ function sidePanel(){
    <div class="total" style="margin-top:4px"><span style="font-size:13px;color:var(--muted)">오늘 결제(계약금·일시납)</span><span class="num" style="font-weight:700">${won(todayAmt)}</span></div>
    ${up}
    <div class="nav">${st.step>0?'<button class="btn ghost" id="prev">이전</button>':""}${st.step>0&&st.step<4?`<button class="btn" id="next" ${st.step>=maxStep()?"disabled":""}>다음</button>`:""}</div>
+   ${st.step>0?'<button class="btn" id="custView" style="margin-top:10px;width:100%;background:var(--accent)">고객 보기 화면으로 (고객에게 보여주기)</button>':""}
    ${st.step>0?'<button class="seg" id="toQueue" style="margin-top:10px;width:100%;padding:8px">대기열로 돌아가기 (이 고객 대기 유지)</button>':""}</aside>`;
 }
 function thinkBox(){const v=curVisit();if(!v)return"";const th=Object.entries(v.items).filter(([c,it])=>it.state==="think");if(!th.length)return"";
@@ -731,6 +756,7 @@ function bindContract(){
   $$("[data-call]").forEach(b=>b.onclick=()=>callVisit(VISITS.find(v=>v.id===b.dataset.call)));
   const uo=$("#u-one");if(uo)uo.oninput=()=>{const h=parseUnit(uo.value);$("#u-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
   const ug=$("#u-go");if(ug)ug.onclick=()=>{const h=parseUnit(uo.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}Object.assign(st,blank());[st.dong,st.ho]=h.split("-");st.t0=Date.now();st.step=1;render();};
+  const cvb=$("#custView");if(cvb)cvb.onclick=()=>{st.custView=true;render();window.scrollTo(0,0);};
   const tq=$("#toQueue");if(tq)tq.onclick=()=>{Object.assign(st,blank());render();};
   $$("[data-opt]").forEach(cb=>cb.onchange=()=>{const id=cb.dataset.opt;const{cat}=findOpt(id);if(cb.checked){if(!cat.multi)cat.opts.forEach(o=>delete st.sel[o.id]);st.sel[id]="split";}else delete st.sel[id];render();});
   $$("[data-pay]").forEach(b=>b.onclick=e=>{e.preventDefault();const[id,m]=b.dataset.pay.split(":");st.sel[id]=m;render();});
@@ -756,6 +782,31 @@ function saveContract(){
     name:st.cust.name.replace(/(.).+/,"$1○○"),date:today(),from:v?(consulted.has(x.cat.id)?"상담":"계약석 추가"):"직접",mins:Math.round((Date.now()-st.t0)/60000)}));
   if(v)v.status="계약";ORIG[unitKey()]=false;
   Object.assign(st,blank());st.view="contract";render();toast("계약을 확정했습니다. 다음 고객을 호출하세요.");
+}
+
+
+/* ===== 고객 보기: 내부 정보(상담 메모·대기열·실장) 없이 고객에게 보여주는 화면 ===== */
+function viewCustomer(){
+  const t=utype();const sel=selected();const chosen=new Set(sel.map(x=>x.cat.id));
+  const total=sel.reduce((a,x)=>a+lineAmt(x.opt.price,x.cat.id,x.method),0),todayAmt=sel.reduce((a,x)=>a+schedule(x.opt.price,x.cat.id,x.method)[0].amt,0);
+  const rest=CATALOG.filter(c=>catOpts(c,t).length&&!chosen.has(c.id)).map(c=>({c,p:popularity(c.id,t)})).sort((a,b)=>(b.p?b.p.pct:-1)-(a.p?a.p.pct:-1));
+  const chosenPop=sel.map(x=>({x,p:popularity(x.cat.id,t)}));
+  return`<div class="cv"><div class="cv-top"><div><div class="cv-site">${esc(S.siteName)} 유상옵션</div><h1>${unitLabel(unitKey())} <span>${t} 타입</span></h1></div><button class="seg" id="cvBack">실장 화면으로</button></div>
+  <div class="cv-grid"><section class="cv-card"><h2>선택하신 품목</h2>
+    ${sel.length?sel.map(x=>`<div class="cv-line"><span><b>${esc(x.cat.name)}</b><small>${esc(x.opt.label)} · ${x.method==="lump"?`일시납 (${S.lumpDiscount}% 할인)`:"분할 납부"}</small></span><span class="num">${won(lineAmt(x.opt.price,x.cat.id,x.method))}원</span><button class="seg" data-cvdel="${x.opt.id}" aria-label="${esc(x.cat.name)} 빼기">빼기</button></div>`).join(""):'<p class="cv-empty">아직 선택한 품목이 없습니다.</p>'}
+    <div class="cv-total"><span>계약 총액</span><b class="num">${won(total)}원</b></div><div class="cv-total sm"><span>오늘 결제 (계약금·일시납)</span><b class="num">${won(todayAmt)}원</b></div>
+    <p class="cv-note">VAT 포함 · 분할 납부는 ${S.stages.map(s=>s.name+" "+s.ratio+"%").join(" · ")}</p></section>
+  <section class="cv-card"><h2>함께 많이 선택하는 품목</h2><p class="cv-sub">이 현장 ${t} 타입 계약 세대 기준, 행사 중 실제 계약으로 계산합니다.</p>
+    ${rest.map(({c,p})=>`<div class="cv-item"><div class="cv-ih"><b>${esc(c.name)}</b>${p?`<span class="cv-pct">${p.hit} / ${p.n}세대 · ${p.pct}%</span>`:'<span class="cv-sub">집계 중</span>'}</div>
+      ${p?`<div class="cv-bar"><i style="width:${p.pct}%"></i></div>`:""}
+      <div class="cv-opts">${catOpts(c,t).map(o=>`<button class="cv-opt" data-cvadd="${o.id}"><span>${esc(o.label)}</span><b class="num">${won(o.price)}원</b><em>담기</em></button>`).join("")}</div></div>`).join("")||'<p class="cv-empty">이 타입의 모든 품목을 선택하셨습니다.</p>'}
+    ${chosenPop.some(z=>z.p)?`<p class="cv-sub" style="margin-top:14px">선택하신 품목: ${chosenPop.filter(z=>z.p).map(z=>`${esc(z.x.cat.name)} ${z.p.pct}%`).join(" · ")} 세대가 함께 선택</p>`:""}</section></div>
+  <p class="cv-foot">최종 내용은 출력되는 계약서로 한 번 더 확인하신 뒤 서명합니다.</p></div>`;
+}
+function bindCustomer(){
+  $("#cvBack").onclick=()=>{st.custView=false;render();window.scrollTo(0,0);};
+  $$("[data-cvadd]").forEach(b=>b.onclick=()=>{const id=b.dataset.cvadd;const{cat}=findOpt(id);if(!cat.multi)cat.opts.forEach(o=>delete st.sel[o.id]);st.sel[id]="split";st.printed=false;render();toast("담았습니다. 납부 방식은 실장이 함께 정해 드립니다.");});
+  $$("[data-cvdel]").forEach(b=>b.onclick=()=>{delete st.sel[b.dataset.cvdel];st.printed=false;render();});
 }
 
 /* ===== 계약 현황 ===== */
