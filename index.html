@@ -215,6 +215,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 @media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
 .vlist{display:flex;flex-direction:column;gap:8px}
 .vrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;text-align:left;border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;width:100%}
+.ord{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:13px;background:var(--navy);color:#fff;font-weight:700;font-size:13px;margin-right:8px}
+.vrow .ord{grid-row:1/3}
+.vrow:has(.ord){grid-template-columns:auto minmax(0,1fr) auto}
+.vrow:has(.ord) small{grid-column:2/4}
+.vrow.first{border-color:var(--navy);border-width:2px}
+.vh{font-size:14px;margin:14px 0 6px;color:var(--navy)}
+.vlist.dim{opacity:.6}
 .assign{border:1px solid var(--navy);border-top:0;border-radius:0 0 10px 10px;margin-top:-8px;padding:10px 12px;background:#fff}
 .vrow.on{border-color:var(--navy);background:var(--navy-soft)}
 .vrow b{font-size:15px}
@@ -337,7 +344,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v6.2 · 테스트 시트 연결</span>
+      <span class="sample">검토용 시안 v6.3 · 테스트 시트 연결</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -524,7 +531,7 @@ async function syncPull(){if(!API||st.guestOnly)return;
     let changed=false;
     r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);if(SYNC.pending[k])return;if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);changed=true;});
     SYNC.last=r.now;SYNC.loaded=true;SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";
-    if(changed&&typeof checkAssign==="function"&&checkAssign()){SYNC.dirtyRender=false;render();}else if(changed||SYNC.dirtyRender)syncRender();
+    if(changed||SYNC.dirtyRender)syncRender();
   }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}syncBadge();}
 function syncRender(){const a=document.activeElement;if((a&&/INPUT|TEXTAREA|SELECT|IFRAME/.test(a.tagName)&&a.type!=="checkbox")||st.addrOpen){SYNC.dirtyRender=true;return;}SYNC.dirtyRender=false;render();}
 function syncBadge(){const el=document.getElementById("syncBadge");if(!el)return;
@@ -539,6 +546,7 @@ function initSync(){
   setInterval(()=>{if(SYNC.dirtyRender)syncRender();syncBadge();},1500);
   document.addEventListener("focusout",()=>setTimeout(()=>{if(SYNC.dirtyRender)syncRender();},50));
 }
+setInterval(()=>{if(st.user&&["consult","guest"].includes(st.view)&&!st.custView)syncRender();},30000); /* 대기 분 표시 갱신 */
 function afterRender(){if(!API)return;scanDirty();syncPush();syncBadge();}
 
 /* ===== 현장 인기도: 같은 타입 확정 계약 세대 중 이 품목을 계약한 비율 ===== */
@@ -586,7 +594,7 @@ function bindLogin(){
   $$("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(!st.pick){toast("이름을 먼저 고르세요.");return;}
     if(k==="지움")st.pin="";else if(k==="←")st.pin=st.pin.slice(0,-1);else if(st.pin.length<4)st.pin+=k;
     if(st.pin.length===4){const s=S.staff.find(x=>x.name===st.pick);
-      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.view=ROLES[s.role].includes("contract")&&s.role==="계약"?"contract":s.role==="상담"?"consult":"guest";st.pin="";st.pick="";toast(`${s.name}(${ROLE_LABEL[s.role]||s.role}) 로그인`);st.ack={};checkAssign(true);}
+      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.view=ROLES[s.role].includes("contract")&&s.role==="계약"?"contract":s.role==="상담"?"consult":"guest";st.pin="";st.pick="";toast(`${s.name}(${ROLE_LABEL[s.role]||s.role}) 로그인`);}
       else{st.pin="";toast("PIN이 맞지 않습니다.");}}
     render();});
 }
@@ -626,27 +634,11 @@ function viewGuestDesk(){
    <p>휴대폰 카메라로 QR을 찍으면 방명록이 열립니다.<br>한 번 등록하면 상담과 계약에 그대로 쓰여 다시 적지 않으셔도 됩니다.</p><p class="qp-sub">QR이 어려우시면 안내 직원에게 말씀해 주세요.</p></div>
   ${guestForm(true)}</section>
   <section class="panel"><h2>오늘 방문 ${list.length}세대</h2><p class="hint">최근 등록 순. 상태는 상담·계약 단계에 따라 자동으로 바뀝니다.</p>
-  <div class="vlist">${list.map(v=>`<button type="button" class="vrow ${st.gv===v.id?"on":""}" data-gv="${v.id}"><span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${statusName(v.status)}</span><small>${hhmm(v.at)} · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}${v.status==="방문"?" · <b style='color:var(--navy)'>눌러서 상담 실장 배정</b>":""}</small></button>${st.gv===v.id?assignBox(v):""}`).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>'}</div></section></div>`;
+  <div class="vlist">${(()=>{const wl=waitList().map(x=>x.id);return list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow">${n?`<span class="ord">${n}</span>`:""}<span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"상담 대기 "+n+"번":statusName(v.status)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>';})()}</div></section></div>`;
 }
-function assignBox(v){
-  const cons=S.staff.filter(x=>x.role==="상담");const me=ROLES[st.role].includes("consult");
-  if(!["방문","상담중"].includes(v.status))return`<div class="assign"><p class="hint" style="margin:0">${statusName(v.status)} 단계입니다. ${v.status==="계약대기"?"계약석 대기열에서 호출됩니다.":"계약 현황·관리대장에서 확인하세요."}</p></div>`;
-  return`<div class="assign"><div class="kv" style="margin-bottom:8px"><span>휴대폰</span><b class="num">${esc(v.phone||"-")}</b><span>방문</span><b>${hhmm(v.at)} · ${esc(viaLabel(v))}</b></div>
-   <b style="font-size:13px">${v.status==="상담중"?"상담 실장 바꾸기 (지금: "+esc(v.consultant||"-")+")":"상담 실장 배정"}</b>
-   <div class="row" style="gap:6px;margin-top:6px">${cons.map(x=>`<button type="button" class="seg big-seg" data-asg="${v.id}|${esc(x.name)}" aria-pressed="${v.consultant===x.name}">${esc(x.name)}<small style="opacity:.7"> ${VISITS.filter(y=>y.status==="상담중"&&y.consultant===x.name&&y.id!==v.id).length?"상담 중":"대기"}</small></button>`).join("")}
-   ${me?`<button type="button" class="seg big-seg" data-asg="${v.id}|${esc(st.user)}|me">내가 바로 상담</button>`:""}</div>
-   <p class="note" style="margin:6px 0 0">배정하면 그 실장 태블릿에 체크리스트가 자동으로 열립니다.</p></div>`;
-}
-function checkAssign(fromLogin){
-  if(!st.user||st.role!=="상담")return false;st.ack=st.ack||{};
-  const mine=VISITS.filter(v=>v.status==="상담중"&&v.consultant===st.user&&!st.ack[v.id]).sort((a,b)=>(a.assignedAt||a.at)-(b.assignedAt||b.at));
-  if(!mine.length)return false;
-  const cur=VISITS.find(x=>x.id===st.cv);const busy=cur&&cur.status==="상담중"&&cur.consultant===st.user;
-  mine.forEach(v=>st.ack[v.id]=1);
-  if(busy){toast(`새 상담 배정: ${mine.map(v=>v.name).join(", ")} — 지금 상담을 마친 뒤 목록에서 여세요.`);return true;}
-  const v=mine[0];st.view="consult";st.cv=v.id;toast(`새 상담 배정: ${v.name} (${v.unit?unitLabel(v.unit):"동·호 미확정"}) — 체크리스트를 열었습니다.`);
-  return true;
-}
+/* 상담 대기 순번: 오늘 방문했고 아직 상담을 시작하지 않은 세대, 먼저 온 순서 */
+function waitList(){return VISITS.filter(v=>v.date===today()&&v.status==="방문").sort((a,b)=>a.at-b.at);}
+const waitMin=v=>Math.max(0,Math.round((Date.now()-v.at)/60000));
 function addrResults(){const q=(st.addrQ||"").trim();if(!q)return"";const res=ADDR_SAMPLE.filter(a=>(a.road+a.jibun).includes(q));
   return res.length?res.map(a=>`<button type="button" class="addr-res" data-addr="${ADDR_SAMPLE.indexOf(a)}">${esc(a.road)}<small>지번 ${esc(a.jibun)} · 우편번호 ${a.zip}</small></button>`).join(""):'<p class="note">검색 결과가 없습니다. 시안에는 샘플 주소 5개만 있습니다(숭의, 봉담, 송도로, 송파).</p>';}
 /* 실제 주소 검색: 카카오(다음) 우편번호 서비스 — 무료, 키 없음. 인터넷이 안 되면 샘플 검색으로 대체 */
@@ -676,10 +668,6 @@ function bindAddrRes(target){$$("[data-addr]").forEach(b=>b.onclick=()=>{const a
 function bindGuest(phone){
   const g=st.g;
   const back=$("#g-back");if(back)back.onclick=()=>{st.guestMode=false;st.gdone=false;render();};
-  $$("[data-gv]").forEach(b=>b.onclick=()=>{st.gv=st.gv===b.dataset.gv?null:b.dataset.gv;render();});
-  $$("[data-asg]").forEach(b=>b.onclick=()=>{const[id,who,me]=b.dataset.asg.split("|");const v=VISITS.find(x=>x.id===id);if(!v)return;
-    v.status="상담중";v.consultant=who;v.assignedAt=Date.now();v.assignedBy=st.user;st.gv=null;
-    if(me){st.view="consult";st.cv=id;toast(`${v.name} 상담을 시작합니다.`);}else toast(`${v.name} → ${who} 실장에게 배정했습니다. 태블릿에 체크리스트가 열립니다.`);render();});
   const again=$("#g-again");if(again)again.onclick=()=>{st.gdone=false;render();};
   const pv=$("#g-phone-preview");if(pv)pv.onclick=()=>{st.guestMode=true;st.gdone=false;render();};
   const qp=$("#g-qr-print");if(qp)qp.onclick=()=>{document.body.classList.add("print-qr");setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove("print-qr"),500);},100);};
@@ -704,13 +692,29 @@ function bindGuest(phone){
 
 /* ===== 상담 체크리스트 ===== */
 function viewConsult(){
-  const mineF=x=>x.status==="상담중"&&x.consultant===st.user?0:1;const list=VISITS.filter(v=>v.date===today()&&["방문","상담중","계약대기"].includes(v.status)).sort((a,b)=>mineF(a)-mineF(b)||a.at-b.at);
+  const td=VISITS.filter(v=>v.date===today());
+  const mine=td.filter(x=>x.status==="상담중"&&x.consultant===st.user).sort((a,b)=>a.at-b.at);
+  const wait=waitList();
+  const others=td.filter(x=>x.status==="상담중"&&x.consultant!==st.user).sort((a,b)=>a.at-b.at);
   const v=VISITS.find(x=>x.id===st.cv);
-  return`<div class="two"><section class="panel"><span class="who staff">상담 실장</span><h2>상담할 세대</h2><p class="hint">방명록에 등록된 순서입니다. 누르면 체크리스트가 열립니다.</p>
-   <div class="vlist">${list.map(x=>`<button class="vrow ${x.id===st.cv?"on":""}" data-cv="${x.id}"><b>${esc(x.name)}</b><span class="chip ${statusChip(x.status)}">${statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 방문${x.consultant?" · "+esc(x.consultant):""}</small></button>`).join("")||'<p class="empty">대기 중인 방문 세대가 없습니다.</p>'}</div></section>
-  <section class="panel">${v?consultSheet(v):'<h2>체크리스트</h2><p class="hint">왼쪽에서 세대를 고르세요.</p>'}</section></div>`;
+  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${n?`<span class="ord">${n}</span>`:""}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?waitMin(x)+"분 대기":statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장${!n&&x.consultant&&x.consultant!==st.user?" · "+esc(x.consultant)+" 실장":""}</small></button>`;
+  return`<div class="two"><section class="panel"><span class="who staff">상담 실장</span><h2>상담할 세대</h2>
+   ${mine.length?`<h3 class="vh">내가 상담 중</h3><div class="vlist">${mine.map(x=>row(x,0)).join("")}</div>`:""}
+   <h3 class="vh">상담 대기 · 입장 순서 ${wait.length}세대</h3><p class="hint" style="margin-top:0">먼저 온 순서입니다. 1번 고객부터 인사하고 [상담 시작]을 누르세요.</p>
+   <div class="vlist">${wait.map((x,i)=>row(x,i+1)).join("")||'<p class="empty">상담을 기다리는 세대가 없습니다.</p>'}</div>
+   ${others.length?`<h3 class="vh">다른 실장 상담 중</h3><div class="vlist dim">${others.map(x=>row(x,0)).join("")}</div>`:""}
+  </section>
+  <section class="panel">${v?consultSheet(v):'<h2>체크리스트</h2><p class="hint">왼쪽 상담 대기 목록에서 1번 고객을 누르세요.</p>'}</section></div>`;
 }
+function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;
+  return`<h2>${esc(v.name)} <span class="chip think">상담 대기 ${n}번 · ${waitMin(v)}분</span></h2>
+   <div class="kv" style="margin:10px 0"><span>동·호수</span><b>${v.unit?unitLabel(v.unit)+" · "+v.type:"미확정 (상담 중 확인)"}</b><span>휴대폰</span><b class="num">${esc(v.phone||"-")}</b><span>입장</span><b>${hhmm(v.at)} · ${esc(viaLabel(v))}</b></div>
+   ${n>1?`<p class="note">앞에 ${n-1}세대가 더 기다리고 있습니다. 순서를 건너뛰는 경우에만 이 고객을 먼저 상담하세요.</p>`:""}
+   <div class="nav"><button class="btn" id="cv-start">상담 시작</button></div>
+   <p class="note">누르면 다른 실장 화면에서 '${esc(st.user)} 상담 중'으로 바뀌어 같은 고객에게 겹쳐 가지 않습니다.</p>`;}
 function consultSheet(v){
+  if(v.status==="방문")return startCard(v);
+  if(v.status==="상담중"&&v.consultant!==st.user)return`<h2>${esc(v.name)}</h2><p class="hint">${esc(v.consultant||"다른")} 실장이 상담 중입니다.</p>`;
   if(!v.unit)return`<h2>${esc(v.name)}</h2><p class="hint">동·호수가 아직 없습니다. 고객에게 확인해 입력하세요.</p><div class="field"><label for="cv-unit">동·호수 (숫자만)</label><input id="cv-unit" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="cv-hit"></div></div><div class="nav"><button class="btn" id="cv-setunit">확정</button></div>`;
   const items=v.items;let total=0,thinkN=0;
   const cats=CATALOG.filter(c=>catOpts(c,v.type).length);
@@ -728,7 +732,12 @@ function consultSheet(v){
    <p class="note">고민 중 ${thinkN}개는 계약석 화면 맨 위에 메모와 함께 표시됩니다.</p>`;
 }
 function bindConsult(){
-  $$("[data-cv]").forEach(b=>b.onclick=()=>{st.cv=b.dataset.cv;const v=VISITS.find(x=>x.id===st.cv);if(v.status==="방문"){v.status="상담중";v.consultant=st.user;v.assignedAt=Date.now();v.assignedBy=st.user;}st.ack=st.ack||{};st.ack[v.id]=1;render();});
+  $$("[data-cv]").forEach(b=>b.onclick=()=>{st.cv=b.dataset.cv;render();});
+  const sb=$("#cv-start");if(sb)sb.onclick=async()=>{const id=st.cv;sb.disabled=true;sb.textContent="확인 중…";
+    try{if(API)await syncPull();}catch(e){}
+    const x=VISITS.find(y=>y.id===id);
+    if(!x||x.status!=="방문"){toast(x&&x.consultant?`이미 ${x.consultant} 실장이 상담을 시작했습니다. 다음 순번 고객을 고르세요.`:"이미 상담이 시작된 고객입니다.");st.cv=null;render();return;}
+    x.status="상담중";x.consultant=st.user;x.startAt=Date.now();toast(`${x.name} 고객 상담을 시작합니다.`);render();};
   const v=VISITS.find(x=>x.id===st.cv);if(!v)return;
   const cu=$("#cv-unit");if(cu)cu.oninput=()=>{const h=parseUnit(cu.value);$("#cv-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
   const cs=$("#cv-setunit");if(cs)cs.onclick=()=>{const h=parseUnit(cu.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}v.unit=h;v.type=UNITS[h];render();};
