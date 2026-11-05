@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="옵션계약">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>유상옵션 통합계약</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 상단 단계바 + 본문 1열(태블릿 가로에선 본문+합계 사이드). 밝은 단일 테마(현장 조명·종이 계약서와 같은 톤) */
+:root{
+  color-scheme:light;
+  --bg:#f7f8fb; --surface:#ffffff; --ink:#1d2433; --muted:#667085; --line:#dfe3ea;
+  --navy:#2b4c8c; --navy-soft:#eaf0fb; --accent:#b7791f; --accent-soft:#fdf4e3;
+  --ok:#2e7d4f; --ok-soft:#e8f5ec; --warn:#b4541e; --warn-soft:#fdeee4;
+  --paper:#ffffff; --paper-ink:#111; --paper-line:#444;
+  --f-display:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 10px;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.brand h1{font-size:20px;font-weight:700;color:var(--navy)}
+.brand .site{color:var(--muted);font-size:13px}
+#userBox{display:flex;align-items:center;gap:8px;font-size:13px;margin-left:auto}
+#userBox .me{color:var(--navy)}
+#userBox + .tabs{margin-left:0}
+.login{max-width:520px;margin:18px auto 0}
+.big-seg{padding:10px 16px;font-size:15px}
+.pin{display:flex;gap:10px;margin:4px 0 10px}
+.pin span{width:16px;height:16px;border-radius:50%;border:2px solid var(--navy)}
+.pin span.on{background:var(--navy)}
+.pad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:300px}
+.pad button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:14px 0;font-size:20px;font-family:var(--f-num)}
+.pad button:active{background:var(--navy-soft)}
+.sample{font-size:12px;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:4px;font-weight:600}
+.tabs{display:flex;gap:6px;margin-left:auto}
+.tab{border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:6px;font-size:13px}
+.tab[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.steps{display:flex;gap:4px;margin-top:12px;overflow-x:auto}
+.step{flex:1 0 auto;min-width:92px;font-size:13px;padding:7px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--line);color:var(--muted);text-align:left}
+.step b{font-family:var(--f-num);margin-right:6px}
+.step.on{border-color:var(--navy);color:var(--navy);font-weight:700;box-shadow:inset 0 -3px 0 var(--navy)}
+.step.done{color:var(--ok)}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;margin-top:18px}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.panel h2{font-size:18px;margin-bottom:4px}
+.who{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;margin-bottom:10px}
+.who.staff{background:var(--navy-soft);color:var(--navy)}
+.who.cust{background:var(--accent-soft);color:var(--accent)}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 14px}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 180px;min-width:0}
+.field label{font-size:13px;color:var(--muted);font-weight:500}
+.field input,.field select{border:1px solid var(--line);background:#fff;border-radius:8px;padding:11px 12px;font-size:16px;min-width:0}
+.big select{font-size:20px;padding:14px}
+.typebox{display:flex;align-items:center;gap:12px;margin-top:16px;padding:14px 16px;border-radius:8px;background:var(--navy-soft)}
+.typebox .t{font-family:var(--f-display);font-size:26px;font-weight:700;color:var(--navy)}
+.alert{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:14px}
+.info{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--navy-soft);color:var(--navy);font-size:14px}
+
+.cat{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.cat:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.cat-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
+.cat-h h3{font-size:16px}
+.cat-h .co{font-size:12px;color:var(--muted)}
+.opt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-top:6px;background:#fff}
+.opt.sel{border-color:var(--navy);background:var(--navy-soft)}
+.opt input[type=checkbox]{width:22px;height:22px;accent-color:var(--navy)}
+.opt .lbl{font-weight:500}
+.opt .desc{grid-column:2/4;font-size:12px;color:var(--muted)}
+.opt .price{text-align:right;font-weight:500}
+.pay{grid-column:2/4;display:flex;gap:6px;flex-wrap:wrap}
+.seg{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 10px;font-size:13px}
+.seg[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.already{font-size:12px;color:var(--warn);font-weight:600}
+
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 140px);align-self:start}
+.sum-line{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.sum-line span:first-child{min-width:0}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px}
+.total .v{font-size:22px;font-weight:700;color:var(--navy)}
+.nav{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;border:0;border-radius:8px;padding:14px;font-weight:700;font-size:16px;background:var(--navy);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);flex:0 0 auto;padding-inline:18px}
+.btn.sub{background:var(--navy-soft);color:var(--navy)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.empty{color:var(--muted);font-size:14px}
+
+/* 주소 검색 */
+.addr-row{display:flex;gap:8px;align-items:end}
+.addr-row .field{flex:1}
+.addr-btn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:11px 16px;font-weight:600;white-space:nowrap}
+.addr-box{margin-top:8px;border:1px solid var(--navy);border-radius:10px;padding:12px;background:#fff}
+.addr-res{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:10px 4px}
+.addr-res small{display:block;color:var(--muted)}
+.addr-picked{margin-top:6px;padding:10px 12px;border-radius:8px;background:var(--navy-soft)}
+
+/* 결제 카드 */
+.paycard{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:12px;background:#fff}
+.paycard.ok{border-color:var(--ok);background:var(--ok-soft)}
+.paycard.wait{border-color:var(--accent);background:var(--accent-soft)}
+.paycard h3{font-size:16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.paycard table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.paycard td{padding:4px 0;border-bottom:1px dashed var(--line)}
+.paycard td:last-child{text-align:right}
+.due-now{font-weight:700;color:var(--navy)}
+.methods{display:flex;gap:8px;margin-top:12px}
+.methods .seg{padding:10px 18px;font-size:15px;font-weight:600}
+.howto{margin-top:10px;font-size:14px;display:flex;flex-direction:column;gap:8px}
+.depositor{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px dashed var(--accent);border-radius:8px;background:#fff}
+.depositor .nm{font-family:var(--f-num);font-size:20px;font-weight:700;letter-spacing:.02em}
+.msg{white-space:pre-wrap;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;user-select:all}
+.photo{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.photo label.cam{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer}
+.photo input{position:absolute;opacity:0;width:1px;height:1px}
+.thumb{width:72px;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.status{font-size:13px;font-weight:700}
+.status.ok{color:var(--ok)} .status.wait{color:var(--accent)}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff}
+.consent input{width:22px;height:22px;flex:0 0 auto;accent-color:var(--navy)}
+
+/* 출력 단계 */
+.flow{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.flow-step{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.flow-step.done{border-color:var(--ok);background:var(--ok-soft)}
+.flow-step .n{width:28px;height:28px;border-radius:50%;background:var(--navy-soft);color:var(--navy);display:grid;place-items:center;font-weight:700;font-family:var(--f-num)}
+.flow-step.done .n{background:var(--ok);color:#fff}
+.flow-step small{display:block;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:20}
+
+/* 설정 */
+.stage-row{display:grid;grid-template-columns:minmax(0,1.3fr) 90px minmax(0,1.3fr) 40px;gap:8px;align-items:end;margin-top:8px}
+@media (max-width:520px){.stage-row{grid-template-columns:minmax(0,1fr) 80px 40px}.stage-row .f-due{grid-column:1/3}}
+.stage-row input{border:1px solid var(--line);background:#fff;border-radius:8px;padding:10px;min-width:0;width:100%}
+.x{border:1px solid var(--line);background:#fff;border-radius:8px;height:42px}
+.sumchk{margin-top:10px;font-weight:700}
+.sumchk.bad{color:var(--warn)} .sumchk.good{color:var(--ok)}
+.ex-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.ex-table td,.ex-table th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+.tblwrap{overflow-x:auto}
+.ledger{width:100%;border-collapse:collapse;font-size:13px;min-width:1180px}
+.ledger td{white-space:nowrap}
+.ledger th{background:var(--navy-soft);color:var(--navy);text-align:left;padding:8px;font-weight:600}
+.ledger td{padding:8px;border-bottom:1px solid var(--line);background:#fff}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600}
+.pill.c{background:var(--ok-soft);color:var(--ok)} .pill.x{background:var(--warn-soft);color:var(--warn)} .pill.w{background:var(--accent-soft);color:var(--accent)}
+
+/* 계약 현황 */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:2px;background:#fff}
+.kpi span{font-size:13px;color:var(--muted)}
+.kpi b{font-size:28px;color:var(--navy);line-height:1.2}
+.kpi b small{font-size:14px;color:var(--muted);font-weight:500}
+.kpi em{font-style:normal;font-size:13px;color:var(--muted)}
+.kpi.warn{border-color:var(--accent);background:var(--accent-soft)} .kpi.warn b{color:var(--accent)}
+.stat{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+.stat th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.stat td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.stat .r{text-align:right}
+.stat .opts{font-size:12px;color:var(--muted)}
+.bar{display:inline-block;width:110px;height:8px;border-radius:4px;background:var(--navy-soft);margin-right:8px;vertical-align:middle;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--navy);border-radius:4px}
+.types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:8px}
+@media (max-width:620px){.types{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tcell{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;background:#fff}
+.tcell b{font-size:22px;color:var(--navy)} .tcell b small{font-size:13px;color:var(--muted);font-weight:500}
+.tcell .bar{width:100%}
+/* A4 용지 미리보기 */
+.papers{overflow-x:auto;padding-bottom:10px}
+.paper{width:794px;min-height:1123px;background:var(--paper);color:var(--paper-ink);margin:16px auto;padding:48px 52px;box-shadow:0 1px 6px rgba(30,40,60,.12);border:1px solid var(--line);font-size:12px;line-height:1.5}
+.paper h2{font-size:22px;text-align:center;letter-spacing:.2em;margin-bottom:6px;color:var(--paper-ink)}
+.paper .no{text-align:right;font-family:var(--f-num);font-size:11px}
+.paper table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+.paper th,.paper td{border:1px solid var(--paper-line);padding:6px 8px;vertical-align:middle}
+.paper th{background:#eef1f6;font-weight:600;white-space:nowrap}
+.paper .sec{font-weight:700;margin-top:16px;font-size:13px}
+.paper .sign{display:flex;justify-content:flex-end;gap:30px;margin-top:22px;font-size:13px}
+.paper .sign span{display:inline-block;min-width:140px;border-bottom:1px solid var(--paper-ink);text-align:right}
+.paper .terms{font-size:10.5px;columns:2;column-gap:20px;margin-top:10px}
+.paper .r{text-align:right}
+.paper .ph{color:#999}
+.paper .hand{height:40px;background:#fffdf3}
+.paper .hand-note{font-size:10.5px;color:#555}
+.copy-tag{display:inline-block;border:1px solid var(--paper-ink);padding:1px 8px;font-size:11px;float:left}
+.note{margin-top:10px;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.opt,.paycard,.step,.flow-step{transition:background-color .15s,border-color .15s}}
+/* v4: 방명록 · 상담 · 대기열 · 추가 계약 안내 */
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;background:var(--navy-soft);color:var(--navy);white-space:nowrap}
+.chip.think{background:var(--accent-soft);color:var(--accent)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.gray{background:#eef0f4;color:var(--muted)}
+.two{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;margin-top:18px}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.vlist{display:flex;flex-direction:column;gap:8px}
+.vrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;text-align:left;border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;width:100%}
+.vrow.on{border-color:var(--navy);background:var(--navy-soft)}
+.vrow b{font-size:15px}
+.vrow small{grid-column:1/3;color:var(--muted);font-size:12px}
+.unit-hit{margin-top:6px;font-size:14px;color:var(--navy);font-weight:600;min-height:20px}
+.unit-hit.bad{color:var(--warn)}
+.ck-cat{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;background:#fff}
+.ck-cat.sel{border-color:var(--navy)}
+.ck-cat.think{border-color:var(--accent);background:var(--accent-soft)}
+.ck-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.ck-head h3{font-size:16px;margin-right:auto}
+.tri{display:flex;gap:4px}
+.tri .seg{padding:6px 12px;font-size:14px}
+.tri .seg.t[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.memo{margin-top:8px;width:100%;border:1px solid var(--accent);border-radius:8px;padding:9px 10px;font-size:15px;background:#fff}
+.queue{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.qrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
+.qrow .qn{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--f-num)}
+.qrow small{display:block;color:var(--muted)}
+.think-box{border:2px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.think-box h3{font-size:15px;color:var(--accent);margin-bottom:6px}
+.think-box li{margin:3px 0}
+.upsell{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.upsell h3{font-size:14px;margin-bottom:6px}
+.upsell .u{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0}
+.pop{font-size:12px;color:var(--ok);font-weight:600}
+.badge-src{display:inline-flex;gap:6px;align-items:center;margin:0 0 12px;padding:6px 10px;border-radius:8px;background:var(--navy-soft);color:var(--navy);font-size:13px}
+.badge-src.staff{background:var(--accent-soft);color:var(--accent)}
+.funnel{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin-top:12px}
+.fstep{flex:1 1 140px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+.fstep span{font-size:13px;color:var(--muted)} .fstep b{display:block;font-size:26px;color:var(--navy);font-family:var(--f-num)}
+.fstep em{font-style:normal;font-size:12px;color:var(--muted)}
+.farrow{align-self:center;color:var(--muted)}
+/* 고객 휴대폰 화면 */
+.guest-wrap{max-width:440px;margin:18px auto}
+.phone{border:1px solid var(--line);border-radius:24px;background:#fff;padding:22px 18px;box-shadow:0 2px 12px rgba(30,40,60,.08)}
+.phone h2{font-size:20px;color:var(--navy)}
+.phone .field{margin-top:12px}
+.guest-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.done-card{text-align:center;padding:30px 10px}
+.done-card b{display:block;font-size:22px;color:var(--ok);margin-bottom:6px}
+.qrbox{display:flex;gap:14px;align-items:center;border:1px dashed var(--navy);border-radius:10px;padding:12px;margin-bottom:14px;background:var(--navy-soft)}
+.qrbox .q{width:64px;height:64px;background:
+ linear-gradient(90deg,var(--navy) 50%,transparent 0) 0 0/16px 16px,
+ linear-gradient(var(--navy) 50%,transparent 0) 0 0/16px 16px;border:4px solid var(--navy);border-radius:4px;opacity:.85}
+
+/* v5 관리대장 */
+.todos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.todos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.todo{text-align:left;border:1px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.todo span{font-size:13px;color:var(--ink);font-weight:600} .todo b{font-size:28px;color:var(--accent);line-height:1.1} .todo small{font-size:12px;color:var(--muted)}
+.todo.zero{border-color:var(--line);background:#fff} .todo.zero b{color:var(--ok)}
+.todo.on{outline:3px solid var(--navy);outline-offset:1px}
+.search{flex:1 1 280px;min-width:0;border:1px solid var(--navy);border-radius:10px;padding:12px 14px;font-size:16px;background:#fff}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:6px 12px;font-size:14px;margin-top:10px;padding:12px;border-radius:10px;background:var(--bg)}
+.kv span{color:var(--muted)} @media (max-width:600px){.kv{grid-template-columns:auto minmax(0,1fr)}}
+.lt{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+.lt th{text-align:left;font-size:12px;color:var(--muted);padding:6px;border-bottom:1px solid var(--line)} .lt td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.lt .r{text-align:right} .lt small{color:var(--muted)}
+tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dead td:nth-child(5){text-decoration:none}
+.acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px} @media (max-width:700px){.acts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.acts .btn{padding:12px 8px;font-size:14px}
+.actbox{margin-top:14px;border:2px solid var(--navy);border-radius:12px;padding:14px;background:var(--navy-soft)}
+.actbox h3{font-size:16px;margin-bottom:4px}
+.judge{margin:10px 0 0;padding-left:18px;font-size:14px}
+.hline{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:#fff}
+.hline.un{border-color:var(--warn)}
+.photo-chip{font-size:12px;padding:4px 10px;border-radius:12px;background:var(--bg);border:1px dashed var(--line);color:var(--muted)}
+.seg.on-ok{border-color:var(--ok);color:var(--ok)}
+
+@page{size:A4;margin:10mm}
+@media print{body{background:#fff;padding:0}#topbar,.toast,.side,.main section.panel,body::before{display:none!important}.main{display:block;margin:0}.papers{overflow:visible;padding:0}.paper{box-shadow:none;border:0;margin:0;width:auto;min-height:0;padding:0;break-after:page}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top" id="topbar">
+    <div class="brand">
+      <h1>유상옵션 통합계약</h1>
+      <span class="site" id="siteLabel"></span>
+      <span class="sample">검토용 시안 v5.1 · 샘플 데이터</span>
+      <span id="userBox"></span>
+      <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
+    </div>
+    <nav class="steps" id="steps" aria-label="계약 단계"></nav>
+  </header>
+  <main id="app"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===== 현장 설정 (실제 버전: 구글시트 "현장설정") ===== */
+const S = {
+  siteName:"샘플 현장", siteCode:"SMP01",
+  stages:[{name:"계약금",ratio:30,due:"계약일"},{name:"중도금 1차",ratio:30,due:"2027-04-30"},{name:"잔금",ratio:40,due:"입주지정일"}],
+  lumpDiscount:3, roundUnit:1000, itemDeposit:{FILM:20},
+  staff:[{name:"정안내",pin:"5555",role:"안내"},{name:"한상담",pin:"4444",role:"상담"},{name:"오상담",pin:"6666",role:"상담"},
+         {name:"김민수",pin:"1111",role:"계약"},{name:"이지은",pin:"2222",role:"계약"},{name:"박준호",pin:"3333",role:"계약"},{name:"최종태",pin:"0000",role:"관리"}],
+  desks:5, printMode:"A", popMin:10
+};
+const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","status","ledger","settings"]};
+const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",status:"계약 현황",ledger:"관리대장",settings:"현장 설정"};
+const PRINT={
+ A:{name:"감압지 2매 1조",print:"감압지에 1세트 인쇄 (윗장 주관사 보관용 · 아랫장 고객용)",sign:"한 번 쓰면 아랫장에 전사됩니다",receipt:"윗장·아랫장",tag:"2매 1조 · 윗장 주관사 / 아랫장 고객"},
+ B:{name:"일반용지 2부",print:"일반 용지에 2부 인쇄 (고객용 · 주관사 보관용)",sign:"2부에 각각 서명합니다",receipt:"고객용·보관용 2부",tag:"고객용 / 주관사 보관용"},
+ C:{name:"1부 + 촬영본",print:"일반 용지에 1부 인쇄 (고객 교부용)",sign:"1부에 서명하고, 보관용은 촬영본으로 대신합니다",receipt:"고객용 계약서와 업체 보관(촬영 후)",tag:"고객 교부용 · 보관은 촬영본"}};
+const COMPANIES = {
+  WV:{name:"(주)와이즈비전",short:"와이즈비전",bizno:"138-81-98808",ceo:"최종태",tel:"070-8210-2314",bank:"기업 232-123301-01-017",holder:"(주)와이즈비전",warranty:"시공일로부터 1년"},
+  KW:{name:"(주)능구",short:"능구",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"1544-5033",bank:"(계좌 입력 예정)",holder:"(주)능구",warranty:"제품 보증 기준"},
+  FB:{name:"포비 붙박이장",short:"포비",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  WA:{name:"원앙",short:"원앙",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  MJ:{name:"미주조명",short:"미주조명",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  HS:{name:"한샘 안전방충망",short:"한샘",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  NC:{name:"나노코팅 시공사",short:"나노코팅",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  DW:{name:"더웰홈ENC",short:"더웰홈",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"}
+};
+const ALL=["64A","64B","79A","79B"];
+const CATALOG = [
+ {id:"FILM",name:"단열필름",co:"WV",multi:false,opts:[
+  {id:"F1",label:"프리미엄형 (고급스퍼터링+나노세라믹)",types:["64A","64B"],price:1850000},
+  {id:"F2",label:"고급형 (나노세라믹)",types:["64A","64B"],price:1560000},
+  {id:"F3",label:"프리미엄형 (고급스퍼터링+나노세라믹)",types:["79A","79B"],price:1940000},
+  {id:"F4",label:"고급형 (나노세라믹)",types:["79A","79B"],price:1650000}]},
+ {id:"CLO",name:"붙박이장",co:"FB",multi:true,opts:[
+  {id:"C1",label:"여닫이(웜) · 안방 10자",types:["64A"],price:1790000},
+  {id:"C2",label:"여닫이(웜) · 작은방 6자",types:["64A"],price:1590000},
+  {id:"C3",label:"여닫이(웜) · 안방 8자",types:["64B"],price:1450000},
+  {id:"C4",label:"여닫이(웜) · 작은방 4자",types:["64B","79A","79B"],price:1240000},
+  {id:"C5",label:"여닫이(웜) · 안방 12자",types:["79A","79B"],price:2090000},
+  {id:"C6",label:"슬라이딩(웜) · 안방 10자",types:["64A"],price:1990000},
+  {id:"C7",label:"슬라이딩(웜) · 안방 8자",types:["64B"],price:1640000},
+  {id:"C8",label:"슬라이딩(웜) · 안방 12자",types:["79A","79B"],price:2380000}]},
+ {id:"SINK",name:"하이브리드 사각 싱크볼",co:"WA",multi:false,opts:[
+  {id:"S1",label:"원앙 하이브리드 사각 싱크볼 (전평형)",types:ALL,price:1250000,desc:"사각 싱크볼(SQ 780E) + 수전(VA-120MS) + 하이브리드 + 절수패달"}]},
+ {id:"FOOD",name:"음식물처리기",co:"KW",multi:false,opts:[{id:"D1",label:"쾌존 QZ-022",types:ALL,price:1150000}]},
+ {id:"LIGHT",name:"우물천정 감성조명",co:"MJ",multi:false,opts:[
+  {id:"L1",label:"프리미엄 (전평형)",types:ALL,price:1920000,desc:"우물조명 2색2열 + 라인조명 + 무선스위치 + 신발장하부"},
+  {id:"L2",label:"고급형 (전평형)",types:ALL,price:1160000,desc:"우물조명 2색2열 + 무선스위치 + 신발장하부"},
+  {id:"L3",label:"일반형 (전평형)",types:ALL,price:710000,desc:"우물조명 1색 + 무선스위치 + 신발장하부"}]},
+ {id:"NET",name:"안전 방범 방충망",co:"HS",multi:false,opts:[
+  {id:"N1",label:"0.4mm",types:["64A"],price:2460000,desc:"실외기실·대피공간 제외"},
+  {id:"N2",label:"0.4mm",types:["64B"],price:2510000,desc:"실외기실·대피공간 제외"},
+  {id:"N3",label:"0.4mm",types:["79A","79B"],price:2830000,desc:"실외기실·대피공간 제외"},
+  {id:"N4",label:"0.6mm",types:["64A"],price:2630000,desc:"실외기실·대피공간 제외"},
+  {id:"N5",label:"0.6mm",types:["64B"],price:2680000,desc:"실외기실·대피공간 제외"},
+  {id:"N6",label:"0.6mm",types:["79A","79B"],price:3020000,desc:"실외기실·대피공간 제외"}]},
+ {id:"NANO",name:"욕실/주방 나노코팅",co:"NC",multi:false,opts:[
+  {id:"K1",label:"욕실케어 기본 (전평형)",types:ALL,price:680000,desc:"변기2 + 세면대2 + 욕실거울2 + 샤워부스 유리 양면 + 화장대 거울 + 수전4 + 수건걸이2 + 휴지걸이2"},
+  {id:"K2",label:"욕실/주방케어 프리미엄 (전평형)",types:ALL,price:1320000,desc:"기본 + 주방상판·젠다이 UV하드코팅 + 싱크대 수전 + 주방 상판벽면 + 샤워부스 벽면 타일 3면"}]},
+ {id:"COAT",name:"탄성코트 하이제로",co:"DW",multi:false,opts:[
+  {id:"T1",label:"3공간",types:["64A","79A","79B"],price:780000,desc:"주방발코니·안방발코니·대피실 (실외기실 제외)"},
+  {id:"T2",label:"3공간",types:["64B"],price:810000,desc:"주방발코니(실외기실 포함)·안방발코니·대피실"}]}
+];
+const UNITS={};
+[101,102,103].forEach(d=>{for(let f=2;f<=15;f++){[1,2,3,4].forEach(h=>{UNITS[d+"-"+(f*100+h)]=["64A","64A","64B",d===103?"79B":"79A"][h-1];});}});
+const ADDR_SAMPLE=[
+ {road:"인천광역시 미추홀구 석정로 229",jibun:"인천 미추홀구 숭의동 1-1",zip:"22164"},
+ {road:"인천광역시 미추홀구 숭의로 10",jibun:"인천 미추홀구 숭의동 109-5",zip:"22175"},
+ {road:"경기도 화성시 봉담읍 신양2길 190-6",jibun:"경기 화성시 봉담읍 상리 112",zip:"18322"},
+ {road:"광주광역시 광산구 송도로 8",jibun:"광주 광산구 송정동 822",zip:"62254"},
+ {road:"서울특별시 송파구 올림픽로 300",jibun:"서울 송파구 신천동 29",zip:"05551"}];
+
+/* ===== 공통 도구 ===== */
+const won=n=>n.toLocaleString("ko-KR");
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const hhmm=t=>new Date(t).toTimeString().slice(0,5);
+const unitLabel=u=>{const[d,h]=u.split("-");return`${d}동 ${h}호`;};
+const unitCode=u=>{const[d,h]=u.split("-");return d+h.padStart(4,"0");};
+function parseUnit(q){q=(q||"").replace(/\D/g,"");if(q.length<6)return"";const d=q.slice(0,3),h=String(+q.slice(3));const k=d+"-"+h;return UNITS[k]?k:"";}
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800);}
+function findOpt(id){for(const c of CATALOG){const o=c.opts.find(o=>o.id===id);if(o)return{cat:c,opt:o};}}
+const catOpts=(c,type)=>c.opts.filter(o=>o.types.includes(type)&&o.price>0);
+function schedule(price,catId,method){
+  if(method==="lump"){const v=Math.floor(price*(100-S.lumpDiscount)/100/100)*100;return[{name:"일시납 ("+S.lumpDiscount+"% 할인)",due:"계약일",amt:v}];}
+  const r=S.stages.map(s=>s.ratio);
+  if(S.itemDeposit[catId]!=null){const diff=r[0]-S.itemDeposit[catId];r[0]=S.itemDeposit[catId];r[r.length-1]+=diff;}
+  let acc=0;return S.stages.map((s,i)=>{let a;if(i===S.stages.length-1)a=price-acc;else{a=Math.floor(price*r[i]/100/S.roundUnit)*S.roundUnit;acc+=a;}return{name:s.name+" ("+r[i]+"%)",due:s.due,amt:a};});
+}
+const lineAmt=(price,catId,m)=>m==="lump"?schedule(price,catId,"lump")[0].amt:price;
+function readPhoto(input,cb){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(f);}
+function selectText(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);}
+function copyText(el,msg){const t=el.textContent;const fb=()=>{selectText(el);toast("선택된 글을 길게 눌러 복사하세요.");};try{navigator.clipboard.writeText(t).then(()=>toast(msg),fb);}catch(e){fb();}}
+
+/* ===== 샘플 데이터: 관리대장(계약) + 방명록(방문) ===== */
+const LEDGER=[], VISITS=[], ORIG={}, OWNER={}, HIST=[], OPHOTO={};
+(function seed(){let s=7;const iso=d=>new Date(Date.parse(today())+d*864e5).toISOString().slice(0,10);const D1=iso(-16),D2=iso(-12);const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  const keys=Object.keys(UNITS).filter(k=>!["101-1201","102-702","103-1504","101-802"].includes(k));const fam="김이박최정강조윤장임";const pickU=()=>keys.splice(Math.floor(rnd()*keys.length),1)[0];
+  const want={FILM:.5,CLO:.3,SINK:.12,FOOD:.22,LIGHT:.2,NET:.28,NANO:.18,COAT:.25};
+  const base=new Date(today()+"T10:00:00").getTime();
+  for(let n=0;n<34;n++){const unit=pickU();const type=UNITS[unit];const date=n<20?D1:D2;const name=fam[Math.floor(rnd()*fam.length)]+"○○";
+    const staff=["김민수","이지은","박준호"][Math.floor(rnd()*3)],cons=["한상담","오상담"][Math.floor(rnd()*2)];const via=rnd()<.6?"qr":rnd()<.5?"tablet":"staff";
+    let any=false;
+    CATALOG.forEach(c=>{if(rnd()>want[c.id])return;const opts=catOpts(c,type);if(!opts.length)return;const o=opts[Math.floor(rnd()*opts.length)];any=true;
+      const lump=rnd()<.35;const tr=rnd()<.3;
+      LEDGER.push({id:"L"+(LEDGER.length+1),no:`${S.siteCode}-${unitCode(unit)}-${c.co}`,unit,type,cat:c.id,opt:o.label,item:c.name+" · "+o.label,co:c.co,amount:lineAmt(o.price,c.id,lump?"lump":"split"),method:lump?"일시납":"분할",
+        pay:tr?(rnd()<.4?"이체 · 확인 대기":"이체 · 입금 확인"):"카드 결제",status:rnd()<.06?"취소":"계약",name,date,staff,desk:1+Math.floor(rnd()*4),from:rnd()<.15?"추가":"상담"});});
+    VISITS.push({id:"V"+n,unit,type,name,phone:"010-****-"+String(1000+Math.floor(rnd()*8999)),addr:"(샘플)",zip:"",via,at:base,status:any?"계약":"미결정",items:{},consultant:cons,date});
+  }
+  for(let n=0;n<14;n++){const unit=pickU();VISITS.push({id:"M"+n,unit,type:UNITS[unit],name:fam[Math.floor(rnd()*fam.length)]+"○○",phone:"010-****-"+String(1000+Math.floor(rnd()*8999)),addr:"",via:"qr",at:base,status:"미결정",items:{},consultant:"한상담",date:n<8?D1:D2});}
+  const us=[...new Set(LEDGER.map(r=>r.unit))];us.forEach(u=>ORIG[u]=true);us.slice(2,5).forEach(u=>ORIG[u]=false);
+  const lab=u=>{const[d,h]=u.split("-");return d+"동 "+h+"호";};
+  const c=LEDGER.find(r=>r.status==="취소");if(c)HIST.push({id:"H0",at:Date.parse(c.date)+3*864e5+11*36e5,by:"최종태",unit:c.unit,kind:"취소",text:"품목: "+c.item+"\n사유: 가격 부담 · 접수: 전화(주관사)",judge:"철회 기한 내",cos:[c.co],msg:"[취소 통보] "+lab(c.unit)+" "+c.name+"\n품목: "+c.item+"\n판정: 철회 기한 내\n처리: 최종태",notified:true});
+  const g=LEDGER.find(r=>r.status==="계약"&&r.cat==="FILM"&&r.method==="분할");if(g){HIST.push({id:"H1",at:Date.now()-26*36e5,by:"최종태",unit:g.unit,kind:"변경",text:"단열필름: 납부방식 일시납 → 분할 (고객 요청)",judge:"",cos:["WV"],msg:"[변경 통보] "+lab(g.unit)+" "+g.name+"\n단열필름: 납부방식 일시납 → 분할 (고객 요청)\n처리: 최종태",notified:false});}
+  /* 지금 진행 중인 샘플: 대기 2, 상담 중 1, 방문 2 */
+  const now=Date.now();
+  VISITS.push({id:"Q1",unit:"101-1201",type:"64A",name:"홍길동",phone:"010-1234-5678",birth:"1980-03-12",addr:"인천광역시 미추홀구 숭의로 10",zip:"22175",addrDetail:"5층",via:"qr",at:now-38*60000,status:"계약대기",queueAt:now-9*60000,consultant:"한상담",date:today(),
+    items:{FILM:{state:"sel",opts:{F1:"split"}},CLO:{state:"think",opts:{C1:"split"},memo:"배우자와 상의 후 결정. 슬라이딩 가격도 궁금해함"},NET:{state:"sel",opts:{N4:"lump"}},COAT:{state:"think",opts:{},memo:"가격 부담"}}});
+  VISITS.push({id:"Q2",unit:"102-702",type:"64A",name:"윤서연",phone:"010-2222-3456",addr:"서울특별시 송파구 올림픽로 300",zip:"05551",via:"staff",staffBy:"정안내",paperNo:"17",at:now-30*60000,status:"계약대기",queueAt:now-4*60000,consultant:"오상담",date:today(),
+    items:{FILM:{state:"sel",opts:{F2:"split"}},LIGHT:{state:"sel",opts:{L2:"split"}},FOOD:{state:"think",opts:{},memo:"싱크대 하부 공간 확인 필요"}}});
+  VISITS.push({id:"Q3",unit:"103-1504",type:"79B",name:"장민호",phone:"010-7777-1212",addr:"",via:"tablet",at:now-15*60000,status:"상담중",consultant:"한상담",date:today(),items:{FILM:{state:"sel",opts:{F3:"split"}}}});
+  VISITS.push({id:"Q4",unit:"101-802",type:"64A",name:"서지우",phone:"010-3030-4040",addr:"",via:"qr",at:now-6*60000,status:"방문",date:today(),items:{}});
+  VISITS.push({id:"Q5",unit:"",type:"",name:"박○○ (동·호 모름)",phone:"010-5656-7878",addr:"",via:"staff",staffBy:"정안내",paperNo:"18",at:now-2*60000,status:"방문",date:today(),items:{}});
+})();
+let queueSeq=2;
+
+/* ===== 상태 ===== */
+const blank=()=>({step:0,dong:"",ho:"",sel:{},cust:{name:"",phone:"",birth:"",addr:"",addrDetail:"",zip:"",cash:""},consent1:false,consent2:false,paid:{},addrOpen:false,addrQ:"",printed:false,signedPhoto:false,visitId:null,t0:null});
+const st={view:"guest",user:null,role:null,desk:1,pin:"",pick:"",statusDay:"all",cv:null,guestMode:false,gdone:false,
+  g:{unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:"self",paperNo:""},...blank()};
+const unitKey=()=>st.dong&&st.ho?st.dong+"-"+st.ho:"";
+const utype=()=>UNITS[unitKey()]||"";
+const selected=()=>Object.keys(st.sel).map(id=>({...findOpt(id),method:st.sel[id]}));
+const curVisit=()=>VISITS.find(v=>v.id===st.visitId);
+const depositorName=()=>`${st.dong}${st.ho}${st.cust.name.trim()}`;
+function byCompany(){const g={};selected().forEach(x=>{(g[x.cat.co]=g[x.cat.co]||[]).push(x);});return g;}
+const nowAmt=list=>list.reduce((t,x)=>t+schedule(x.opt.price,x.cat.id,x.method)[0].amt,0);
+const viaLabel=v=>v.via==="qr"?"고객 QR":v.via==="tablet"?"방명록 태블릿":`직원 입력${v.staffBy?" · "+v.staffBy:""}${v.paperNo?" · 종이 "+v.paperNo+"번":""}`;
+const statusChip=s=>({방문:"gray",상담중:"",계약대기:"think",계약:"ok",미결정:"warn"}[s]);
+const statusName=s=>({방문:"방문",상담중:"상담 중",계약대기:"계약 대기",계약:"계약",미결정:"미결정"}[s]);
+
+/* ===== 현장 인기도: 같은 타입 확정 계약 세대 중 이 품목을 계약한 비율 ===== */
+function popularity(catId,type){
+  const live=LEDGER.filter(l=>l.status==="계약"&&l.type===type);const units=new Set(live.map(l=>l.unit));
+  if(units.size<S.popMin)return null;const hit=new Set(live.filter(l=>l.cat===catId).map(l=>l.unit)).size;
+  return{n:units.size,hit,pct:Math.round(hit/units.size*100)};
+}
+
+/* ===== 공통 렌더 ===== */
+function render(){
+  $("#siteLabel").textContent=S.siteName+" ("+S.siteCode+")";
+  const app=$("#app");
+  if(st.guestMode){$("#topbar").hidden=true;app.innerHTML=viewGuestPhone();bindGuest(true);return;}
+  $("#topbar").hidden=false;
+  const allowed=st.user?ROLES[st.role]:[];
+  $("#tabs").innerHTML=allowed.map(v=>`<button class="tab" data-tab="${v}" aria-pressed="${st.view===v}">${VIEWS[v]}${v==="contract"&&queue().length?` <span class="chip think">${queue().length}</span>`:""}</button>`).join("");
+  $$("[data-tab]").forEach(b=>b.onclick=()=>{if(st.view==="settings"&&S.stages.reduce((t,s)=>t+s.ratio,0)!==100){toast("납부 비율 합계를 100%로 맞춰 주세요.");return;}st.view=b.dataset.tab;render();window.scrollTo(0,0);});
+  $("#userBox").innerHTML=st.user?`<span class="me">${st.role==="계약"?"계약석 "+st.desk+" · ":""}<b>${esc(st.user)}</b> (${st.role})</span> <button class="seg" id="logout">교대·로그아웃</button>`:"";
+  const lo=$("#logout");if(lo)lo.onclick=()=>{if(st.view==="contract"&&st.step>0){toast("진행 중인 계약을 마치거나 대기열로 돌아간 뒤 교대하세요.");return;}st.user=null;render();};
+  renderSteps();
+  if(!st.user){app.innerHTML=viewLogin();bindLogin();return;}
+  if(!allowed.includes(st.view))st.view=allowed[0];
+  ({guest:()=>{app.innerHTML=viewGuestDesk();bindGuest(false);},consult:()=>{app.innerHTML=viewConsult();bindConsult();},
+    status:()=>{app.innerHTML=viewStatus();bindStatus();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},
+    contract:()=>{const body=[viewQueue,viewItems,viewCust,viewPrint,viewPay][st.step]();app.innerHTML=`<div class="main"><div style="min-width:0">${body}</div>${sidePanel()}</div>`;bindContract();}})[st.view]();
+}
+
+/* ===== 로그인 ===== */
+function viewLogin(){
+  const s=S.staff.find(x=>x.name===st.pick);
+  return`<section class="panel login"><h2>로그인</h2>
+  <p class="hint">역할에 따라 쓸 수 있는 화면이 정해집니다. 모든 기록에 입력한 사람이 남습니다.</p>
+  <div class="field"><label>이름</label><div class="row" style="gap:6px">${S.staff.map(x=>`<button type="button" class="seg big-seg" data-who="${esc(x.name)}" aria-pressed="${st.pick===x.name}">${esc(x.name)} <small style="opacity:.7">${x.role}</small></button>`).join("")}</div></div>
+  ${s&&s.role==="계약"?`<div class="field" style="margin-top:14px"><label>계약석</label><div class="row" style="gap:6px">${Array.from({length:S.desks},(_,i)=>`<button type="button" class="seg big-seg" data-desk="${i+1}" aria-pressed="${st.desk===i+1}">${i+1}번</button>`).join("")}</div></div>`:""}
+  <div class="field" style="margin-top:14px"><label>PIN 4자리</label><div class="pin">${[0,1,2,3].map(i=>`<span class="${i<st.pin.length?"on":""}"></span>`).join("")}</div>
+   <div class="pad">${["1","2","3","4","5","6","7","8","9","지움","0","←"].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join("")}</div></div>
+  <p class="note">시안용 PIN: 안내 정안내 5555 · 상담 한상담 4444, 오상담 6666 · 계약 김민수 1111, 이지은 2222, 박준호 3333 · 관리 최종태 0000</p></section>`;
+}
+function bindLogin(){
+  $$("[data-desk]").forEach(b=>b.onclick=()=>{st.desk=+b.dataset.desk;render();});
+  $$("[data-who]").forEach(b=>b.onclick=()=>{st.pick=b.dataset.who;st.pin="";render();});
+  $$("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(!st.pick){toast("이름을 먼저 고르세요.");return;}
+    if(k==="지움")st.pin="";else if(k==="←")st.pin=st.pin.slice(0,-1);else if(st.pin.length<4)st.pin+=k;
+    if(st.pin.length===4){const s=S.staff.find(x=>x.name===st.pick);
+      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.view=ROLES[s.role].includes("contract")&&s.role==="계약"?"contract":s.role==="상담"?"consult":"guest";st.pin="";st.pick="";toast(`${s.name}(${s.role}) 로그인`);}
+      else{st.pin="";toast("PIN이 맞지 않습니다.");}}
+    render();});
+}
+
+/* ===== 방명록 ===== */
+function guestForm(staffMode){
+  const g=st.g;const hit=g.unit?parseUnit(g.unit):"";
+  return`
+  <div class="field"><label for="g-unit">동·호수 (숫자만, 예: 1011203)</label><input id="g-unit" inputmode="numeric" value="${esc(g.unit)}" placeholder="101동 1203호 → 1011203" ${g.unknown?"disabled":""}>
+   <div class="unit-hit ${g.unit&&!hit?"bad":""}" id="g-hit">${g.unknown?"동·호수 모름 — 계약석에서 확정합니다":hit?`${unitLabel(hit)} · ${UNITS[hit]} 타입`:g.unit?"세대 리스트에 없는 동·호수입니다":""}</div>
+   <label style="font-size:13px;display:flex;gap:6px;align-items:center;margin-top:4px"><input type="checkbox" id="g-unknown" ${g.unknown?"checked":""}> 동·호수를 모릅니다</label></div>
+  <div class="field"><label for="g-name">이름</label><input id="g-name" value="${esc(g.name)}" placeholder="홍길동" autocomplete="off"></div>
+  <div class="field"><label for="g-phone">휴대폰</label><input id="g-phone" type="tel" inputmode="tel" value="${esc(g.phone)}" placeholder="010-1234-5678"></div>
+  <div class="field"><label>주소 (선택 · 계약 시 그대로 사용됩니다)</label>
+   <div class="addr-row"><div class="addr-picked" style="flex:1;${g.addr?"":"color:var(--muted)"}">${g.addr?`(${esc(g.zip)}) ${esc(g.addr)}`:"주소 검색으로 찾기"}</div><button type="button" class="addr-btn" id="g-addrOpen">검색</button></div>
+   ${st.addrOpen?`<div class="addr-box"><input id="addrQ" class="memo" style="border-color:var(--line)" value="${esc(st.addrQ)}" placeholder="도로명, 건물명, 지번 (예: 숭의)"><div id="addrRes">${addrResults()}</div></div>`:""}
+   ${g.addr?`<input id="g-addrDetail" class="memo" style="border-color:var(--line)" value="${esc(g.addrDetail)}" placeholder="상세주소">`:""}</div>
+  ${staffMode?`<div class="field"><label>입력 방식</label><div class="row" style="gap:6px">
+    <button type="button" class="seg" data-gmode="self" aria-pressed="${g.mode==="self"}">고객 직접 입력</button>
+    <button type="button" class="seg" data-gmode="staff" aria-pressed="${g.mode==="staff"}">직원 대리 입력</button></div>
+    ${g.mode==="staff"?`<div class="row" style="margin-top:8px;align-items:center;gap:8px"><label for="g-paper" style="font-size:13px;color:var(--muted)">종이 방명록 줄 번호 (종이로 받은 경우)</label><input id="g-paper" inputmode="numeric" value="${esc(g.paperNo)}" style="width:90px;border:1px solid var(--line);border-radius:8px;padding:8px"></div>`:""}</div>`:""}
+  <label class="consent"><input type="checkbox" id="g-c1" ${g.c1?"checked":""}><span><b>개인정보 수집·이용 동의 (필수)</b><br>항목: 이름, 휴대폰, 동·호수, 주소(입력 시), 계약 시 생년월일 · 목적: 옵션 상담·안내, 계약 체결·이행·하자보수 · 보유: 미계약 시 행사 종료 후 3개월, 계약 시 계약 종료 후 관계법령이 정한 기간<br>동의하지 않으실 수 있으며, 이 경우 방명록 등록 없이 상담받으실 수 있습니다.</span></label>
+  <label class="consent" style="margin-top:8px"><input type="checkbox" id="g-c2" ${g.c2?"checked":""}><span><b>안내 문자 수신 동의 (선택)</b><br>상담 내용·견적과 행사 안내를 문자로 받습니다.</span></label>
+  <div class="nav"><button class="btn" id="g-submit">등록</button></div>`;
+}
+function viewGuestPhone(){
+  return`<div class="guest-wrap"><div class="guest-bar"><span>고객 휴대폰 화면 (QR로 접속)</span><button class="seg" id="g-back">직원 화면으로</button></div>
+  <div class="phone">${st.gdone?`<div class="done-card"><b>등록되었습니다</b>상담 실장이 곧 안내해 드립니다.<br>${esc(S.siteName)} 유상옵션 행사</div><div class="nav"><button class="btn sub" id="g-again">다른 분 등록</button></div>`:
+   `<h2>${esc(S.siteName)} 옵션 행사 방명록</h2><p class="hint">한 번 등록하면 상담과 계약에 그대로 쓰여서 다시 적지 않으셔도 됩니다.</p>${guestForm(false)}`}</div></div>`;
+}
+function viewGuestDesk(){
+  const list=VISITS.filter(v=>v.date===today()).sort((a,b)=>b.at-a.at);
+  return`<div class="two"><section class="panel"><span class="who ${st.role==="안내"?"staff":"cust"}">${st.role==="안내"?"안내 직원":"방명록"}</span><h2>방명록 등록</h2>
+  <div class="qrbox"><span class="q" aria-hidden="true"></span><span><b>입구 QR</b><br><small>고객이 본인 휴대폰으로 찍으면 이 양식이 열립니다.</small><br><button class="seg" id="g-phone-preview" style="margin-top:6px">고객 화면 미리보기</button></span></div>
+  ${guestForm(true)}</section>
+  <section class="panel"><h2>오늘 방문 ${list.length}세대</h2><p class="hint">최근 등록 순. 상태는 상담·계약 단계에 따라 자동으로 바뀝니다.</p>
+  <div class="vlist">${list.map(v=>`<div class="vrow"><span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${statusName(v.status)}</span><small>${hhmm(v.at)} · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`).join("")}</div></section></div>`;
+}
+function addrResults(){const q=(st.addrQ||"").trim();if(!q)return"";const res=ADDR_SAMPLE.filter(a=>(a.road+a.jibun).includes(q));
+  return res.length?res.map(a=>`<button type="button" class="addr-res" data-addr="${ADDR_SAMPLE.indexOf(a)}">${esc(a.road)}<small>지번 ${esc(a.jibun)} · 우편번호 ${a.zip}</small></button>`).join(""):'<p class="note">검색 결과가 없습니다. 시안에는 샘플 주소 5개만 있습니다(숭의, 봉담, 송도로, 송파).</p>';}
+function bindAddr(target){
+  const aq=$("#addrQ");if(aq){const upd=()=>{st.addrQ=aq.value;$("#addrRes").innerHTML=addrResults();bindAddrRes(target);};let comp=false;
+    aq.addEventListener("compositionstart",()=>comp=true);aq.addEventListener("compositionend",()=>{comp=false;upd();});aq.addEventListener("input",()=>{if(!comp)upd();});}
+  bindAddrRes(target);
+}
+function bindAddrRes(target){$$("[data-addr]").forEach(b=>b.onclick=()=>{const a=ADDR_SAMPLE[+b.dataset.addr];target.addr=a.road;target.zip=a.zip;st.addrOpen=false;st.addrQ="";render();});}
+function bindGuest(phone){
+  const g=st.g;
+  const back=$("#g-back");if(back)back.onclick=()=>{st.guestMode=false;st.gdone=false;render();};
+  const again=$("#g-again");if(again)again.onclick=()=>{st.gdone=false;render();};
+  const pv=$("#g-phone-preview");if(pv)pv.onclick=()=>{st.guestMode=true;st.gdone=false;render();};
+  const u=$("#g-unit");if(u)u.oninput=()=>{g.unit=u.value;const hit=parseUnit(g.unit);const el=$("#g-hit");el.className="unit-hit"+(g.unit&&!hit?" bad":"");el.textContent=hit?`${unitLabel(hit)} · ${UNITS[hit]} 타입`:g.unit?"세대 리스트에 없는 동·호수입니다":"";};
+  const un=$("#g-unknown");if(un)un.onchange=()=>{g.unknown=un.checked;render();};
+  [["g-name","name"],["g-phone","phone"],["g-addrDetail","addrDetail"],["g-paper","paperNo"]].forEach(([id,k])=>{const el=$("#"+id);if(el)el.oninput=()=>g[k]=el.value;});
+  const ao=$("#g-addrOpen");if(ao)ao.onclick=()=>{st.addrOpen=!st.addrOpen;render();const q=$("#addrQ");if(q)q.focus();};
+  bindAddr(g);
+  $$("[data-gmode]").forEach(b=>b.onclick=()=>{g.mode=b.dataset.gmode;render();});
+  const c1=$("#g-c1");if(c1)c1.onchange=()=>g.c1=c1.checked;const c2=$("#g-c2");if(c2)c2.onchange=()=>g.c2=c2.checked;
+  const sb=$("#g-submit");if(sb)sb.onclick=()=>{
+    const unit=g.unknown?"":parseUnit(g.unit);
+    if(!g.unknown&&!unit){toast("동·호수를 확인해 주세요. 모르시면 '모릅니다'에 체크하세요.");return;}
+    if(!g.name.trim()||!/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(g.phone.trim())){toast("이름과 휴대폰 번호를 확인해 주세요.");return;}
+    if(!g.c1){toast("필수 동의에 체크해 주세요.");return;}
+    const staff=!phone&&g.mode==="staff";
+    VISITS.push({id:"G"+Date.now(),unit,type:UNITS[unit]||"",name:g.name.trim(),phone:g.phone.trim(),addr:g.addr,zip:g.zip,addrDetail:g.addrDetail,sms:g.c2,
+      via:phone?"qr":staff?"staff":"tablet",staffBy:staff?st.user:"",paperNo:staff?g.paperNo:"",at:Date.now(),status:"방문",date:today(),items:{}});
+    st.g={unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:g.mode,paperNo:""};
+    if(phone){st.gdone=true;}else toast("방명록에 등록했습니다.");render();};
+}
+
+/* ===== 상담 체크리스트 ===== */
+function viewConsult(){
+  const list=VISITS.filter(v=>v.date===today()&&["방문","상담중","계약대기"].includes(v.status)).sort((a,b)=>a.at-b.at);
+  const v=VISITS.find(x=>x.id===st.cv);
+  return`<div class="two"><section class="panel"><span class="who staff">상담 실장</span><h2>상담할 세대</h2><p class="hint">방명록에 등록된 순서입니다. 누르면 체크리스트가 열립니다.</p>
+   <div class="vlist">${list.map(x=>`<button class="vrow ${x.id===st.cv?"on":""}" data-cv="${x.id}"><b>${esc(x.name)}</b><span class="chip ${statusChip(x.status)}">${statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 방문${x.consultant?" · "+esc(x.consultant):""}</small></button>`).join("")||'<p class="empty">대기 중인 방문 세대가 없습니다.</p>'}</div></section>
+  <section class="panel">${v?consultSheet(v):'<h2>체크리스트</h2><p class="hint">왼쪽에서 세대를 고르세요.</p>'}</section></div>`;
+}
+function consultSheet(v){
+  if(!v.unit)return`<h2>${esc(v.name)}</h2><p class="hint">동·호수가 아직 없습니다. 고객에게 확인해 입력하세요.</p><div class="field"><label for="cv-unit">동·호수 (숫자만)</label><input id="cv-unit" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="cv-hit"></div></div><div class="nav"><button class="btn" id="cv-setunit">확정</button></div>`;
+  const items=v.items;let total=0,thinkN=0;
+  const cats=CATALOG.filter(c=>catOpts(c,v.type).length);
+  const html=cats.map(c=>{const it=items[c.id]||{state:"no",opts:{}};const opts=catOpts(c,v.type);
+    if(it.state==="sel")Object.entries(it.opts).forEach(([id,m])=>{const o=findOpt(id).opt;total+=lineAmt(o.price,c.id,m);});
+    if(it.state==="think")thinkN++;
+    return`<div class="ck-cat ${it.state==="sel"?"sel":it.state==="think"?"think":""}"><div class="ck-head"><h3>${esc(c.name)} <small style="font-weight:400;color:var(--muted);font-size:12px">${esc(COMPANIES[c.co].short)}</small></h3>
+     <div class="tri" role="group" aria-label="${esc(c.name)} 상태"><button class="seg" data-st="${c.id}:sel" aria-pressed="${it.state==="sel"}">선택</button><button class="seg t" data-st="${c.id}:think" aria-pressed="${it.state==="think"}">고민 중</button><button class="seg" data-st="${c.id}:no" aria-pressed="${it.state==="no"}">안 함</button></div></div>
+     ${it.state!=="no"?opts.map(o=>{const on=it.opts[o.id];return`<label class="opt ${on?"sel":""}" style="background:#fff"><input type="checkbox" data-co="${c.id}:${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
+       ${on&&it.state==="sel"?`<span class="pay"><button type="button" class="seg" data-cm="${c.id}:${o.id}:split" aria-pressed="${on==="split"}">분할</button><button type="button" class="seg" data-cm="${c.id}:${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join(""):""}
+     ${it.state==="think"?`<input class="memo" data-memo="${c.id}" value="${esc(it.memo||"")}" placeholder="계약 실장에게 전할 메모 (예: 배우자와 상의 후 결정)">`:""}</div>`;}).join("");
+  return`<div class="row" style="justify-content:space-between;align-items:baseline"><h2>${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">선택 합계 ${won(total)}원</span></div>
+   <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입에 없는 항목은 보이지 않습니다.</p>${html}
+   <div class="nav"><button class="btn" id="cv-done">${v.status==="계약대기"?"수정 저장 (대기 유지)":"상담 완료 · 계약석 대기 등록"}</button></div>
+   <p class="note">고민 중 ${thinkN}개는 계약석 화면 맨 위에 메모와 함께 표시됩니다.</p>`;
+}
+function bindConsult(){
+  $$("[data-cv]").forEach(b=>b.onclick=()=>{st.cv=b.dataset.cv;const v=VISITS.find(x=>x.id===st.cv);if(v.status==="방문"){v.status="상담중";v.consultant=st.user;}render();});
+  const v=VISITS.find(x=>x.id===st.cv);if(!v)return;
+  const cu=$("#cv-unit");if(cu)cu.oninput=()=>{const h=parseUnit(cu.value);$("#cv-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
+  const cs=$("#cv-setunit");if(cs)cs.onclick=()=>{const h=parseUnit(cu.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}v.unit=h;v.type=UNITS[h];render();};
+  $$("[data-st]").forEach(b=>b.onclick=()=>{const[c,s]=b.dataset.st.split(":");const it=v.items[c]||{opts:{}};it.state=s;if(s==="no")it.opts={};v.items[c]=it;render();});
+  $$("[data-co]").forEach(cb=>cb.onchange=()=>{const[c,o]=cb.dataset.co.split(":");const cat=CATALOG.find(x=>x.id===c);const it=v.items[c];
+    if(cb.checked){if(!cat.multi)it.opts={};it.opts[o]="split";}else delete it.opts[o];render();});
+  $$("[data-cm]").forEach(b=>b.onclick=e=>{e.preventDefault();const[c,o,m]=b.dataset.cm.split(":");v.items[c].opts[o]=m;render();});
+  $$("[data-memo]").forEach(i=>i.oninput=()=>{v.items[i.dataset.memo].memo=i.value;});
+  const d=$("#cv-done");if(d)d.onclick=()=>{const vals=Object.values(v.items);
+    if(!vals.some(it=>it.state==="sel"&&Object.keys(it.opts).length)&&!vals.some(it=>it.state==="think")){toast("선택하거나 고민 중인 품목이 하나 이상 있어야 합니다.");return;}
+    if(v.status!=="계약대기"){v.status="계약대기";v.queueAt=Date.now();toast(`계약석 대기 ${queue().length}번째로 등록했습니다. 고객에게 안내해 주세요.`);}else toast("수정했습니다.");
+    st.cv=null;render();};
+}
+
+/* ===== 계약석: 대기열 → 확인 → 출력·서명 → 결제 ===== */
+const queue=()=>VISITS.filter(v=>v.status==="계약대기").sort((a,b)=>a.queueAt-b.queueAt);
+const STEPS=["대기열·세대","품목 확인","고객정보 확인","출력·서명","결제·확정"];
+function renderSteps(){const el=$("#steps");if(!st.user||st.view!=="contract"){el.innerHTML="";return;}
+  el.innerHTML=STEPS.map((s,i)=>`<button class="step ${i===st.step?"on":""} ${i<st.step?"done":""}" data-go="${i}" ${i>maxStep()?"disabled":""}><b>${i+1}</b>${s}</button>`).join("");
+  $$("[data-go]").forEach(b=>b.onclick=()=>{st.step=+b.dataset.go;render();});}
+function maxStep(){if(!utype())return 0;if(!selected().length)return 1;if(!custOK())return 2;if(!st.printed)return 3;return 4;}
+const custOK=()=>st.cust.name.trim()&&/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(st.cust.phone.trim())&&st.cust.addr&&(curVisit()||st.consent1)&&st.consent2;
+const payDone=p=>p&&((p.method==="card"&&p.done)||(p.method==="transfer"&&p.requested));
+const payOK=()=>Object.keys(byCompany()).every(co=>payDone(st.paid[co]));
+function callVisit(v){
+  Object.assign(st,blank());st.visitId=v.id;st.t0=Date.now();[st.dong,st.ho]=v.unit.split("-");
+  Object.entries(v.items).forEach(([c,it])=>{if(it.state==="sel")Object.assign(st.sel,it.opts);});
+  st.cust={name:v.name,phone:v.phone,birth:v.birth||"",addr:v.addr||"",addrDetail:v.addrDetail||"",zip:v.zip||"",cash:""};
+  st.step=1;render();window.scrollTo(0,0);toast(`${v.name}님(${unitLabel(v.unit)})을 계약석 ${st.desk}번으로 호출했습니다.`);
+}
+function viewQueue(){
+  const q=queue();const now=Date.now();
+  return`<section class="panel"><span class="who staff">계약 실장</span><h2>계약석 대기열 ${q.length}세대</h2>
+   <p class="hint">상담을 마친 세대가 순서대로 들어옵니다. 호출하면 세대·품목·고객정보가 모두 채워진 상태로 열립니다.</p>
+   ${q.length?`<div class="nav" style="margin:0 0 4px"><button class="btn" id="callNext">다음 고객 호출 · ${esc(q[0].name)} (${unitLabel(q[0].unit)})</button></div>`:""}
+   <div class="queue">${q.map((v,i)=>{const its=Object.values(v.items);const sel=its.filter(it=>it.state==="sel").length,th=its.filter(it=>it.state==="think").length;
+     return`<div class="qrow"><span class="qn">${i+1}</span><span><b>${esc(v.name)}</b> · ${unitLabel(v.unit)} ${v.type}<small>대기 ${Math.max(0,Math.round((now-v.queueAt)/60000))}분 · 선택 ${sel} · <span style="color:var(--accent);font-weight:600">고민 중 ${th}</span> · 상담 ${esc(v.consultant||"-")}${v.via==="staff"?" · 직원 입력":""}</small></span><button class="seg" data-call="${v.id}" style="padding:8px 14px">호출</button></div>`;}).join("")||'<p class="empty">대기 중인 세대가 없습니다.</p>'}</div>
+   <details style="margin-top:18px"><summary style="cursor:pointer;color:var(--muted);font-size:14px">방명록 없이 바로 계약 (세대 검색)</summary>
+    <div class="field" style="margin-top:10px"><label for="u-one">동·호수 (숫자만)</label><input id="u-one" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="u-hit"></div></div>
+    <div class="nav"><button class="btn sub" id="u-go">이 세대로 시작</button></div></details></section>`;
+}
+function sidePanel(){
+  const sel=selected();
+  const lines=sel.map(x=>`<div class="sum-line"><span>${esc(x.cat.name)}<br><small style="color:var(--muted)">${esc(x.opt.label)} · ${x.method==="lump"?"일시납":"분할"}</small></span><span class="num">${won(lineAmt(x.opt.price,x.cat.id,x.method))}</span></div>`).join("");
+  const total=sel.reduce((t,x)=>t+lineAmt(x.opt.price,x.cat.id,x.method),0);
+  const todayAmt=sel.reduce((t,x)=>t+schedule(x.opt.price,x.cat.id,x.method)[0].amt,0);
+  const v=curVisit();
+  let up="";
+  if(utype()&&st.step>=1&&st.step<=2){
+    const chosen=new Set(sel.map(x=>x.cat.id));const think=v?Object.entries(v.items).filter(([c,it])=>it.state==="think").map(([c])=>c):[];
+    const rest=CATALOG.filter(c=>catOpts(c,utype()).length&&!chosen.has(c.id));
+    up=`<div class="upsell"><h3>추가 계약 안내</h3>${rest.map(c=>{const p=popularity(c.id,utype());return`<div class="u"><span>${esc(c.name)}${think.includes(c.id)?' <span class="chip think">고민 중</span>':""}</span>${p?`<span class="pop">${utype()} ${p.n}세대 중 ${p.hit}세대 (${p.pct}%)</span>`:'<span style="color:var(--muted);font-size:12px">인기도: 계약 '+S.popMin+'세대부터</span>'}</div>`;}).join("")||'<p class="empty" style="font-size:13px">해당 타입의 모든 품목을 선택했습니다.</p>'}</div>`;
+  }
+  return`<aside class="panel side"><h2>${unitKey()?esc(unitLabel(unitKey())):"세대 미선택"}</h2><div class="hint">${utype()?utype()+" 타입":"대기열에서 호출하세요"}${v?" · 상담 "+esc(v.consultant||"-"):""}</div>
+   ${lines||'<div class="empty">선택한 품목이 없습니다.</div>'}
+   <div class="total"><span>계약 총액</span><span class="v num">${won(total)}</span></div>
+   <div class="total" style="margin-top:4px"><span style="font-size:13px;color:var(--muted)">오늘 결제(계약금·일시납)</span><span class="num" style="font-weight:700">${won(todayAmt)}</span></div>
+   ${up}
+   <div class="nav">${st.step>0?'<button class="btn ghost" id="prev">이전</button>':""}${st.step>0&&st.step<4?`<button class="btn" id="next" ${st.step>=maxStep()?"disabled":""}>다음</button>`:""}</div>
+   ${st.step>0?'<button class="seg" id="toQueue" style="margin-top:10px;width:100%;padding:8px">대기열로 돌아가기 (이 고객 대기 유지)</button>':""}</aside>`;
+}
+function thinkBox(){const v=curVisit();if(!v)return"";const th=Object.entries(v.items).filter(([c,it])=>it.state==="think");if(!th.length)return"";
+  return`<div class="think-box"><h3>상담 실장 메모 · 고민 중 ${th.length}개 (${esc(v.consultant||"")})</h3><ul style="margin:0;padding-left:18px">${th.map(([c,it])=>{const cat=CATALOG.find(x=>x.id===c);const p=popularity(c,v.type);
+    return`<li><b>${esc(cat.name)}</b>${Object.keys(it.opts).length?" ("+Object.keys(it.opts).map(id=>esc(findOpt(id).opt.label)).join(", ")+")":""} — ${esc(it.memo||"메모 없음")}${p?` <span class="pop">· ${v.type} ${p.n}세대 중 ${p.pct}% 선택</span>`:""}</li>`;}).join("")}</ul></div>`;}
+function viewItems(){
+  const t=utype();const prev=LEDGER.filter(l=>l.unit===unitKey()&&l.status!=="취소");const v=curVisit();
+  return`<section class="panel"><span class="who staff">계약 실장 + 고객</span><h2>품목 확인</h2>
+  ${thinkBox()}
+  <p class="hint">${v?"상담에서 선택한 품목이 체크되어 있습니다. 고민 중 품목을 마지막으로 권하고, 바뀐 것만 고치세요.":t+" 타입 선택지만 보입니다."}</p>
+  ${prev.length?`<div class="alert" style="margin-bottom:12px">이미 계약한 품목: ${prev.map(p=>esc(p.item)).join(", ")}. 추가 계약으로 진행됩니다.${prev[0].name&&v&&prev[0].name[0]!==v.name[0]?" · 기존 계약자와 이름이 다릅니다. 명의를 확인하세요.":""}</div>`:""}
+  ${CATALOG.map(c=>{const opts=catOpts(c,t);if(!opts.length)return"";const think=v&&v.items[c.id]&&v.items[c.id].state==="think";
+   return`<div class="cat"><div class="cat-h"><h3>${esc(c.name)}</h3><span class="co">${esc(COMPANIES[c.co].name)}${c.multi?" · 복수 선택 가능":""}</span>${think?'<span class="chip think">고민 중</span>':""}</div>
+   ${opts.map(o=>{const on=st.sel[o.id];return`<label class="opt ${on?"sel":""}"><input type="checkbox" data-opt="${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
+     ${on?`<span class="pay"><button type="button" class="seg" data-pay="${o.id}:split" aria-pressed="${on==="split"}">분할 납부</button><button type="button" class="seg" data-pay="${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join("")}</div>`;}).join("")}</section>`;
+}
+function viewCust(){
+  const v=curVisit();const cos=Object.keys(byCompany()).map(c=>COMPANIES[c].name);
+  const f=(id,l,ph,type="text",mode="")=>`<div class="field"><label for="c-${id}">${l}</label><input id="c-${id}" type="${type}" ${mode?`inputmode="${mode}"`:""} placeholder="${ph}" value="${esc(st.cust[id])}" autocomplete="off"></div>`;
+  return`<section class="panel"><span class="who cust">고객 확인</span><h2>계약자 정보 확인</h2>
+  ${v?`<div class="badge-src ${v.via==="staff"?"staff":""}">${v.via==="staff"?"직원이 대신 입력한 정보입니다. 고객과 소리 내어 한 번 더 확인하세요.":"방명록에서 고객이 직접 입력한 정보입니다. 확인만 하시면 됩니다."} (${esc(viaLabel(v))})</div>`:""}
+  <p class="hint">방문자와 계약 명의가 다르면 이름·휴대폰을 고치세요. 출력 후 총괄표에 동·호수와 성명을 자필로 한 번 더 적습니다.</p>
+  <div class="row">${f("name","성명 (계약자)","홍길동")}${f("phone","휴대폰","010-1234-5678","tel","tel")}</div>
+  <div class="row" style="margin-top:12px">${f("birth","생년월일","1980-01-01","text","numeric")}${f("cash","현금영수증 번호 (선택)","휴대폰번호와 같으면 비워두세요","text","numeric")}</div>
+  <div style="margin-top:12px"><div class="addr-row"><div class="field"><label>현 주소</label>${st.cust.addr?`<div class="addr-picked">(${esc(st.cust.zip)}) ${esc(st.cust.addr)}</div>`:`<div class="addr-picked" style="color:var(--muted)">방명록에 주소가 없습니다. 검색하세요</div>`}</div><button type="button" class="addr-btn" id="addrOpen">${st.cust.addr?"다시 검색":"주소 검색"}</button></div>
+   ${st.addrOpen?`<div class="addr-box"><input id="addrQ" class="memo" style="border-color:var(--line)" value="${esc(st.addrQ)}" placeholder="도로명, 건물명, 지번"><div id="addrRes">${addrResults()}</div></div>`:""}
+   ${st.cust.addr?`<div class="row" style="margin-top:10px">${f("addrDetail","상세주소","예: 103동 1502호")}</div>`:""}</div>
+  ${v?`<div class="badge-src" style="margin-top:16px">① 개인정보 수집·이용 동의: 방명록 등록 때 받았습니다 (${hhmm(v.at)}, 계약 목적 포함)</div>`:`<label class="consent"><input type="checkbox" id="consent1" ${st.consent1?"checked":""}><span><b>① 개인정보 수집·이용 동의 (필수)</b><br>항목: 성명, 휴대폰, 생년월일, 주소 · 목적: 옵션 계약의 체결·이행·하자보수 · 보유: 계약 종료 후 관계법령이 정한 기간 · 방명록 없이 계약할 때만 표시</span></label>`}
+  <label class="consent" style="margin-top:8px"><input type="checkbox" id="consent2" ${st.consent2?"checked":""}><span><b>② 개인정보 제3자 제공 동의 (필수) — 고객 구두 동의 확인</b><br>증거는 출력된 총괄표의 '□ 동의함' 직접 체크와 서명입니다. 품목사가 정해진 지금 한 번만 받습니다.<br>받는 자: ${esc(cos.join(", "))} · 목적: 시공·하자보수·대금 수납 · 항목: 성명, 휴대폰, 동·호수, 주소 · 보유: 하자보수 기간 종료까지<br>동의를 거부할 수 있으나, 거부 시 해당 품목의 계약이 어렵습니다.</span></label>
+  <p class="note">동의 문구는 시안이며 확정 전 법률 검토가 필요합니다.</p></section>`;
+}
+function contractNo(co){return`${S.siteCode}-${st.dong}${st.ho.padStart(4,"0")}-${co}`;}
+function payLabel(p){return p.method==="card"?"카드 결제":p.confirmed?"이체 · 입금 확인":"이체 · 확인 대기";}
+function viewPrint(){
+  const g=byCompany();const c=st.cust;const fullAddr=`(${c.zip}) ${c.addr} ${c.addrDetail}`.trim();const P=PRINT[S.printMode];
+  const flow=`<section class="panel"><span class="who staff">계약 실장</span><h2>출력·서명</h2>
+   <p class="hint">미리보기로 고객과 내용을 확인한 뒤 인쇄합니다. 서명이 끝나면 [다음]으로 결제 단계로 갑니다. 원본(보관용) 촬영은 정리 실장이 수거할 때 합니다.</p>
+   <div class="flow">
+    <div class="flow-step ${st.printed?"done":""}"><span class="n">1</span><span><b>인쇄</b><small>총괄표 1장 + 품목사별 계약서 ${Object.keys(g).length}장 · ${P.print}</small></span><button class="btn sub" id="doPrint" style="flex:0 0 auto;padding:10px 16px">${st.printed?"다시 인쇄":"인쇄"}</button></div>
+    <div class="flow-step"><span class="n">2</span><span><b>고객 자필 기재와 서명</b><small>총괄표: 동·호수 자필, 성명 자필, 제3자 제공 <b>□ 동의함</b> 직접 체크, 서명 · 품목사별 계약서: 서명 각 1회 · ${P.sign}</small></span><span></span></div>
+   </div><p class="note">[인쇄]를 누르면 연결된 프린터의 인쇄 창이 열립니다. 검토용이라 데이터는 저장되지 않습니다.</p></section>`;
+  const sum=`<div class="paper"><span class="copy-tag">${P.tag}</span><div class="no">통합번호 ${S.siteCode}-${st.dong}${st.ho.padStart(4,"0")}</div><h2>유상옵션 계약 총괄표</h2>
+   <p style="text-align:center;margin:0">${esc(S.siteName)} · 계약일 ${today()}</p>
+   <div class="sec">■ 공사 대상 및 계약자</div>
+   <table><tr><th>동·호수</th><td>${st.dong}동 ${st.ho}호</td><th>주택타입</th><td>${utype()}</td></tr><tr><th>성명</th><td>${esc(c.name)}</td><th>휴대폰</th><td>${esc(c.phone)}</td></tr>
+   <tr><th>생년월일</th><td>${esc(c.birth)||'<span class="ph">-</span>'}</td><th>현금영수증</th><td>${esc(c.cash||c.phone)}</td></tr><tr><th>주소</th><td colspan="3">${esc(fullAddr)}</td></tr></table>
+   <div class="sec">■ 계약자 자필 확인</div><table><tr><th style="width:18%">동·호수</th><td class="hand"></td><th style="width:12%">성명</th><td class="hand"></td></tr></table>
+   <p class="hand-note">위 인쇄된 동·호수와 같은지 확인하고 직접 적어 주세요. 동·호수 기재 내용은 계약자 본인이 확인한 것으로 봅니다.</p>
+   <div class="sec">■ 선택 품목 및 납부 계획 (VAT 포함, 원)</div>
+   <table><tr><th>품목사</th><th>품목 / 선택</th><th>방식</th><th>금액</th><th>오늘 결제</th></tr>${selected().map(x=>{const sc=schedule(x.opt.price,x.cat.id,x.method);return`<tr><td>${esc(COMPANIES[x.cat.co].name)}</td><td>${esc(x.cat.name)} · ${esc(x.opt.label)}</td><td>${x.method==="lump"?"일시납":"분할"}</td><td class="r num">${won(lineAmt(x.opt.price,x.cat.id,x.method))}</td><td class="r num">${won(sc[0].amt)}</td></tr>`;}).join("")}</table>
+   <div class="sec">■ 품목사별 납부 안내</div><table><tr><th>품목사</th><th>오늘 결제</th><th>입금자명 (중도금·잔금 동일)</th><th>입금계좌</th></tr>${Object.entries(g).map(([co,l])=>`<tr><td>${esc(COMPANIES[co].name)}</td><td class="r num">${won(nowAmt(l))}</td><td class="num">${esc(depositorName())}</td><td>${esc(COMPANIES[co].bank)}</td></tr>`).join("")}</table>
+   <div class="sec">■ 개인정보 동의</div><p style="margin:4px 0">① 수집·이용 동의: ${curVisit()?"방명록 등록 시 받음 ("+hhmm(curVisit().at)+")":"□ 동의함"}</p><p style="margin:4px 0">② 제3자 제공 동의 — 받는 자: ${esc(Object.keys(g).map(co=>COMPANIES[co].name).join(", "))} · 목적: 시공·하자보수·대금 수납 · 항목: 성명, 휴대폰, 동·호수, 주소 · 보유: 하자보수 기간 종료까지 · 거부할 수 있으나 거부 시 해당 품목 계약이 어렵습니다. &nbsp; <b style="font-size:13px">□ 동의함</b> <span style="font-size:10px;color:#555">(계약자 직접 체크)</span></p>
+   <div class="sign">계약자 <span>(서명)</span></div><p style="margin-top:24px;font-size:11px">※ 품목사별 계약서가 함께 교부되며, 각 계약의 조건과 약관은 해당 계약서에 따릅니다. 주관사 (주)능구 1544-5033</p></div>`;
+  const per=Object.entries(g).map(([co,list])=>{const C=COMPANIES[co];return`<div class="paper"><span class="copy-tag">${P.tag}</span><div class="no">계약번호 ${contractNo(co)}</div><h2>${list.length===1?esc(list[0].cat.name)+" 옵션 계약서":"옵션 계약서"}</h2>
+   <div class="sec">■ 공사 대상의 표시</div><table><tr><th>공급위치</th><td colspan="3">${esc(S.siteName)}</td></tr><tr><th>동·호수</th><td>${st.dong}동 ${st.ho}호</td><th>주택타입</th><td>${utype()}</td></tr><tr><th>계약일</th><td colspan="3">${today()}</td></tr></table>
+   <div class="sec">■ 옵션 품목 및 가격 (VAT 포함, 원)</div>${list.map(x=>{const sc=schedule(x.opt.price,x.cat.id,x.method);return`<table><tr><th style="width:30%">품목</th><td colspan="3">${esc(x.cat.name)} · ${esc(x.opt.label)}</td></tr><tr><th>정가</th><td class="num">${won(x.opt.price)}</td><th>납부방법</th><td>${x.method==="lump"?"일시납":"분할 납부"}</td></tr>${sc.map(s=>`<tr><th>${esc(s.name)}</th><td>${esc(s.due)}</td><td colspan="2" class="r num">${won(s.amt)}</td></tr>`).join("")}</table>`;}).join("")}
+   <div class="sec">■ 결제 방식</div><table><tr><th>납부 계좌</th><td>${esc(C.bank)}</td><th>예금주</th><td>${esc(C.holder)}</td></tr><tr><th>입금자명</th><td colspan="3"><b class="num">${esc(depositorName())}</b> — 중도금·잔금도 이 이름으로 입금해 주세요</td></tr></table>
+   <div class="sec">■ 공급받는 자 (갑) / 공급자 (을)</div><table><tr><th>갑</th><td>${esc(c.name)} · ${esc(c.phone)}</td><th>을</th><td>${esc(C.name)} (${esc(C.bizno)})</td></tr></table>
+   <div class="sign">갑 <span>(서명)</span> 을 <span>${esc(C.name)} (인)</span></div>
+   <table style="margin-top:14px"><tr><th style="width:30%">카드 영수증 부착란</th><td style="height:100px;vertical-align:top;font-size:11px;color:#555">${esc(C.name)} · 오늘 결제 <b class="num">${won(nowAmt(list))}원</b><br>카드 결제 시 이 칸에 영수증을 부착하세요.</td></tr></table>
+   <div class="sec">■ 약관 (뒷면 인쇄)</div><div class="terms"><span class="ph">품목사별 약관 전문이 인쇄되는 자리입니다.</span></div></div>`;}).join("");
+  return flow+`<div class="papers">${sum}${per}</div>`;
+}
+function viewPay(){
+  const g=byCompany();
+  return`<section class="panel"><span class="who staff">계약 실장</span><h2>품목사별 결제</h2>
+  <p class="hint">서명이 끝난 계약서를 품목사별로 앞에 놓고 한 업체씩 결제합니다.</p>
+  ${Object.entries(g).map(([co,list])=>{const C=COMPANIES[co];const p=st.paid[co]||{};const now=nowAmt(list);const cls=p.method==="transfer"&&p.requested&&!p.confirmed?"wait":payDone(p)?"ok":"";
+   const msg=`[이체 확인요청] ${st.dong}동 ${st.ho}호 ${st.cust.name}\n품목: ${list.map(x=>x.cat.name).join(", ")}\n금액: ${won(now)}원\n입금자명: ${depositorName()}\n입금계좌: ${C.bank}`;
+   return`<div class="paycard ${cls}"><h3><span>${esc(C.name)}</span><span class="num due-now">오늘 ${won(now)}원</span></h3>
+   <div class="methods"><button type="button" class="seg" data-m="${co}:card" aria-pressed="${p.method==="card"}">카드</button><button type="button" class="seg" data-m="${co}:transfer" aria-pressed="${p.method==="transfer"}">계좌이체</button></div>
+   ${p.method==="card"?`<div class="howto"><span>① ${esc(C.short)} 단말기로 <b class="num">${won(now)}원</b> 결제, 영수증 2장</span><span>② ${esc(C.name)} 계약서(${PRINT[S.printMode].receipt})의 부착란에 1장씩 부착</span>
+     <div class="row" style="align-items:center"><button type="button" class="seg" style="padding:10px 16px" data-cd="${co}" aria-pressed="${!!p.done}">${p.done?"카드 결제 완료 ✓":"③ 카드 결제 완료"}</button></div></div>`:""}
+   ${p.method==="transfer"?`<div class="howto"><div class="depositor"><span>입금자명</span><span class="nm">${esc(depositorName())}</span><span style="font-size:13px;color:var(--muted)">→ ${esc(C.bank)}</span></div>
+     <div class="msg" id="msg-${co}">${esc(msg)}</div><div class="row" style="align-items:center"><button type="button" class="seg" style="padding:10px 16px" data-copy="${co}">메시지 복사</button>
+     ${p.requested?`<button type="button" class="seg" style="padding:10px 16px" data-cf="${co}" aria-pressed="${!!p.confirmed}">${p.confirmed?"입금 확인됨":"업체 확인 완료"}</button>`:""}</div></div>`:""}</div>`;}).join("")}
+  <div class="nav"><button class="btn" id="confirm" ${payOK()?"":"disabled"}>계약 확정 · 고객용 교부</button></div></section>`;
+}
+function bindContract(){
+  const cn=$("#callNext");if(cn)cn.onclick=()=>callVisit(queue()[0]);
+  $$("[data-call]").forEach(b=>b.onclick=()=>callVisit(VISITS.find(v=>v.id===b.dataset.call)));
+  const uo=$("#u-one");if(uo)uo.oninput=()=>{const h=parseUnit(uo.value);$("#u-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
+  const ug=$("#u-go");if(ug)ug.onclick=()=>{const h=parseUnit(uo.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}Object.assign(st,blank());[st.dong,st.ho]=h.split("-");st.t0=Date.now();st.step=1;render();};
+  const tq=$("#toQueue");if(tq)tq.onclick=()=>{Object.assign(st,blank());render();};
+  $$("[data-opt]").forEach(cb=>cb.onchange=()=>{const id=cb.dataset.opt;const{cat}=findOpt(id);if(cb.checked){if(!cat.multi)cat.opts.forEach(o=>delete st.sel[o.id]);st.sel[id]="split";}else delete st.sel[id];render();});
+  $$("[data-pay]").forEach(b=>b.onclick=e=>{e.preventDefault();const[id,m]=b.dataset.pay.split(":");st.sel[id]=m;render();});
+  ["name","phone","birth","cash","addrDetail"].forEach(k=>{const i=$("#c-"+k);if(i)i.oninput=()=>{st.cust[k]=i.value;refreshNav();};});
+  const ao=$("#addrOpen");if(ao)ao.onclick=()=>{st.addrOpen=true;render();const q=$("#addrQ");if(q)q.focus();};
+  bindAddr(st.cust);
+  [["consent1","consent1"],["consent2","consent2"]].forEach(([id,k])=>{const el=$("#"+id);if(el)el.onchange=()=>{st[k]=el.checked;refreshNav();};});
+  $$("[data-m]").forEach(b=>b.onclick=()=>{const[co,m]=b.dataset.m.split(":");st.paid[co]={method:m};render();});
+  $$("[data-ph]").forEach(inp=>inp.onchange=()=>readPhoto(inp,url=>{st.paid[inp.dataset.ph]={...st.paid[inp.dataset.ph],photo:url};render();}));
+  $$("[data-copy]").forEach(b=>b.onclick=()=>{const co=b.dataset.copy;copyText($("#msg-"+co),"복사했습니다. 업체 단톡방에 붙여넣으세요.");st.paid[co]={...st.paid[co],requested:true};setTimeout(render,50);});
+  $$("[data-cf]").forEach(b=>b.onclick=()=>{const co=b.dataset.cf;st.paid[co]={...st.paid[co],confirmed:!st.paid[co].confirmed};render();});
+  const pr=$("#doPrint");if(pr)pr.onclick=()=>{st.printed=true;render();setTimeout(()=>window.print(),300);toast("서명 대기로 저장 · 인쇄 창을 엽니다");};
+  $$("[data-cd]").forEach(b=>b.onclick=()=>{const co=b.dataset.cd;st.paid[co]={...st.paid[co],done:!st.paid[co].done};render();});
+  const cf=$("#confirm");if(cf)cf.onclick=saveContract;
+  const n=$("#next");if(n)n.onclick=()=>{st.step++;render();window.scrollTo(0,0);};
+  const p=$("#prev");if(p)p.onclick=()=>{st.step--;render();};
+}
+function refreshNav(){const n=$("#next");if(n)n.disabled=st.step>=maxStep();renderSteps();}
+function saveContract(){
+  const v=curVisit();const consulted=new Set(v?Object.entries(v.items).filter(([c,it])=>it.state==="sel").map(([c])=>c):[]);
+  selected().forEach(x=>LEDGER.push({id:"L"+(LEDGER.length+1),no:contractNo(x.cat.co),unit:unitKey(),type:utype(),cat:x.cat.id,opt:x.opt.label,item:x.cat.name+" · "+x.opt.label,co:x.cat.co,
+    amount:lineAmt(x.opt.price,x.cat.id,x.method),method:x.method==="lump"?"일시납":"분할",pay:payLabel(st.paid[x.cat.co]),status:"계약",staff:st.user,desk:st.desk,
+    name:st.cust.name.replace(/(.).+/,"$1○○"),date:today(),from:v?(consulted.has(x.cat.id)?"상담":"계약석 추가"):"직접",mins:Math.round((Date.now()-st.t0)/60000)}));
+  if(v)v.status="계약";ORIG[unitKey()]=false;
+  Object.assign(st,blank());st.view="contract";render();toast("계약을 확정했습니다. 다음 고객을 호출하세요.");
+}
+
+/* ===== 계약 현황 ===== */
+function viewStatus(){
+  const days=[...new Set(LEDGER.map(l=>l.date).concat(VISITS.map(v=>v.date)))].sort();
+  const inDay=d=>st.statusDay==="all"||d===st.statusDay;
+  const rows=LEDGER.filter(l=>inDay(l.date));const live=rows.filter(l=>l.status==="계약");
+  const units=new Set(live.map(l=>l.unit)).size,totalUnits=Object.keys(UNITS).length,amount=live.reduce((t,l)=>t+l.amount,0),waiting=live.filter(l=>l.pay==="이체 · 확인 대기").length;
+  const vis=VISITS.filter(v=>inDay(v.date));const consulted=vis.filter(v=>["계약대기","계약","미결정"].includes(v.status)||Object.keys(v.items).length).length,contracted=vis.filter(v=>v.status==="계약").length;
+  const added=live.filter(l=>l.from==="계약석 추가").length;
+  const byCat=CATALOG.map(c=>{const r=live.filter(l=>l.cat===c.id);const opts={};r.forEach(l=>opts[l.opt]=(opts[l.opt]||0)+1);return{c,n:r.length,amt:r.reduce((t,l)=>t+l.amount,0),lump:r.filter(l=>l.method==="일시납").length,opts};}).sort((a,b)=>b.n-a.n);
+  const maxN=Math.max(1,...byCat.map(x=>x.n));
+  const types=ALL.map(t=>{const tot=Object.values(UNITS).filter(v=>v===t).length;return{t,tot,n:new Set(live.filter(l=>l.type===t).map(l=>l.unit)).size};});
+  const share=`[계약 현황] ${S.siteName} · ${st.statusDay==="all"?"전체":st.statusDay} · ${new Date().toTimeString().slice(0,5)} 기준\n방문 ${vis.length}세대 → 계약 ${units}세대 · ${live.length}건 · ${won(amount)}원\n`+byCat.filter(x=>x.n).map(x=>`- ${x.c.name}: ${x.n}건 ${won(x.amt)}원`).join("\n");
+  return`<section class="panel" style="margin-top:18px"><div class="row" style="align-items:center;justify-content:space-between"><div><h2>계약 현황</h2><p class="hint" style="margin-bottom:0">'계약' 상태만 집계합니다. 숫자는 샘플입니다.</p></div>
+   <div class="row" style="gap:6px">${["all",...days].map(d=>`<button class="seg" data-day="${d}" aria-pressed="${st.statusDay===d}">${d==="all"?"전체":d.slice(5).replace("-","/")}</button>`).join("")}</div></div>
+   <h3 style="margin-top:18px;font-size:15px">방문에서 계약까지</h3>
+   <div class="funnel"><div class="fstep"><span>방문</span><b>${vis.length}</b><em>방명록 등록 세대</em></div><span class="farrow">→</span>
+    <div class="fstep"><span>상담 완료</span><b>${consulted}</b><em>${vis.length?Math.round(consulted/vis.length*100):0}%</em></div><span class="farrow">→</span>
+    <div class="fstep"><span>계약</span><b>${contracted}</b><em>방문 대비 ${vis.length?Math.round(contracted/vis.length*100):0}%</em></div>
+    <div class="fstep" style="border-color:var(--accent)"><span>지금 대기 / 미결정</span><b>${queue().length} / ${vis.filter(v=>v.status==="미결정").length}</b><em>미결정은 견적 문자 대상</em></div></div>
+   <div class="kpis"><div class="kpi"><span>계약 세대</span><b class="num">${units}<small> / ${totalUnits}</small></b><em>전체 세대 대비 ${(units/totalUnits*100).toFixed(1)}%</em></div>
+    <div class="kpi"><span>계약 건수</span><b class="num">${live.length}</b><em>계약석 추가 ${added}건</em></div>
+    <div class="kpi"><span>계약 총액 (VAT 포함)</span><b class="num">${won(Math.round(amount/10000))}<small>만원</small></b><em>세대당 ${won(Math.round(amount/Math.max(1,units)/10000))}만원</em></div>
+    <div class="kpi ${waiting?"warn":""}"><span>이체 확인 대기</span><b class="num">${waiting}</b><em>${waiting?"관리대장에서 처리":"모두 확인됨"}</em></div></div>
+   <h3 style="margin-top:22px;font-size:15px">품목별</h3>
+   <div class="tblwrap"><table class="stat"><tr><th>품목</th><th>품목사</th><th>계약 건수</th><th class="r">금액</th><th class="r">일시납</th><th>선택 구성</th></tr>
+   ${byCat.map(x=>`<tr><td><b>${esc(x.c.name)}</b></td><td>${esc(COMPANIES[x.c.co].short)}</td><td><span class="bar"><i style="width:${x.n/maxN*100}%"></i></span><span class="num">${x.n}</span></td><td class="r num">${won(x.amt)}</td><td class="r num">${x.n?Math.round(x.lump/x.n*100)+"%":"-"}</td><td class="opts">${Object.entries(x.opts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${esc(k)} <b class="num">${v}</b>`).join(" · ")||"-"}</td></tr>`).join("")}</table></div>
+   <h3 style="margin-top:22px;font-size:15px">실장별 계약</h3>
+   <div class="types">${S.staff.filter(s=>s.role==="계약").map(s=>{const r=live.filter(l=>l.staff===s.name);return`<div class="tcell"><span>${esc(s.name)}</span><b class="num">${new Set(r.map(l=>l.unit)).size}<small> 세대 · ${r.length}건</small></b><span style="font-size:13px;color:var(--muted)" class="num">${won(r.reduce((t,l)=>t+l.amount,0))}원</span></div>`;}).join("")}</div>
+   <h3 style="margin-top:22px;font-size:15px">타입별 계약 세대</h3>
+   <div class="types">${types.map(x=>`<div class="tcell"><span>${x.t}</span><b class="num">${x.n}<small> / ${x.tot}</small></b><span class="bar"><i style="width:${x.tot?x.n/x.tot*100:0}%"></i></span></div>`).join("")}</div>
+   <h3 style="margin-top:22px;font-size:15px">단톡방 공유용</h3><div class="msg" id="shareMsg">${esc(share)}</div>
+   <div class="row" style="margin-top:8px"><button class="seg" id="copyShare" style="padding:10px 16px">현황 메시지 복사</button></div></section>`;
+}
+function bindStatus(){$$("[data-day]").forEach(b=>b.onclick=()=>{st.statusDay=b.dataset.day;render();});$("#copyShare").onclick=()=>copyText($("#shareMsg"),"복사했습니다.");}
+
+/* ===== 관리대장 (v5): 처리할 일 → 검색 → 세대 카드 → 처리 → 업체 통보 ===== */
+const DAY=864e5;
+const todayMs=()=>Date.parse(today());
+const dueLeft=r=>Math.ceil((Date.parse(r.date)+14*DAY-todayMs())/DAY);
+const md=d=>{const x=new Date(d);return`${x.getMonth()+1}/${x.getDate()}`;};
+const visitOf=u=>VISITS.filter(v=>v.unit===u).sort((a,b)=>(b.status==="계약")-(a.status==="계약"))[0];
+const canEdit=()=>st.role==="관리";
+Object.assign(st,{lv:"unit",lq:"",lf:null,lunit:null,lact:null,lco:"WV",hUn:false,lform:{}});
+
+function unitRows(){
+  const m={};LEDGER.forEach(r=>{(m[r.unit]=m[r.unit]||[]).push(r);});
+  return Object.entries(m).map(([u,rows])=>{const live=rows.filter(r=>r.status!=="취소");const v=visitOf(u);
+    const owner=OWNER[u]||{};
+    return{u,type:rows[0].type,rows,live,name:owner.name||(live[0]||rows[0]).name,phone:owner.phone||(v?v.phone:""),total:live.reduce((t,r)=>t+r.amount,0),
+      wait:live.some(r=>r.pay==="이체 · 확인 대기"),orig:ORIG[u]===false,due:live.some(r=>{const d=dueLeft(r);return d>=0&&d<=3;}),un:HIST.some(h=>h.unit===u&&!h.notified)};})
+   .sort((a,b)=>unitCode(a.u).localeCompare(unitCode(b.u)));
+}
+function todo(){const us=unitRows();return{wait:us.filter(x=>x.wait).length,orig:us.filter(x=>x.orig).length,un:HIST.filter(h=>!h.notified).length,due:us.filter(x=>x.due).length};}
+function matchQ(x,q){q=q.trim();if(!q)return true;const d=q.replace(/\D/g,"");
+  return (d.length>=3&&unitCode(x.u).includes(d))||(d.length===4&&String(x.phone).endsWith(d))||x.name.includes(q)||x.rows.some(r=>r.name.includes(q));}
+function filtered(){const f=st.lf;return unitRows().filter(x=>matchQ(x,st.lq)&&(!f||(f==="wait"&&x.wait)||(f==="orig"&&x.orig)||(f==="due"&&x.due)||(f==="un"&&x.un)));}
+
+function viewLedger(){
+  const t=todo();
+  const tile=(k,label,n,hint)=>`<button class="todo ${st.lf===k?"on":""} ${n?"":"zero"}" data-lf="${k}"><span>${label}</span><b class="num">${n}</b><small>${hint}</small></button>`;
+  return`<section class="panel" style="margin-top:18px">
+   <div class="row" style="justify-content:space-between;align-items:baseline"><h2>관리대장</h2><span class="hint" style="margin:0">${canEdit()?"관리자: 취소·변경·추가·명의 변경 가능":"계약 실장: 보기 · 이체 확인 · 원본 수거만 (처리는 관리자)"}</span></div>
+   <h3 style="font-size:14px;color:var(--muted);margin:12px 0 6px">처리할 일 — 모두 0이면 오늘 일은 끝입니다</h3>
+   <div class="todos">${tile("wait","이체 확인 대기",t.wait,"업체 확인 후 처리")}${tile("orig","원본 미수거",t.orig,"보관용 계약서")}${tile("un","업체 미통보",t.un,"처리 후 통보 안 함")}${tile("due","철회 기한 3일 이내",t.due,"계약일 + 14일")}</div>
+   <div class="row" style="margin-top:16px;align-items:center;gap:10px">
+    <input id="lq" class="search" value="${esc(st.lq)}" placeholder="동·호수(1011201) · 이름 · 휴대폰 뒤 4자리" autocomplete="off">
+    <div class="row" style="gap:6px" role="group" aria-label="보기">${[["unit","세대별"],["co","품목사별"],["hist","변경 이력"]].map(([k,l])=>`<button class="seg" data-lv="${k}" aria-pressed="${st.lv===k}" style="padding:8px 14px">${l}</button>`).join("")}</div></div>
+  </section>
+  <div id="lbody">${st.lv==="unit"?unitView():st.lv==="co"?coView():histView()}</div>`;
+}
+
+/* --- 세대별: 목록 + 세대 카드 --- */
+function unitView(){
+  const list=filtered();
+  if(st.lunit&&!list.some(x=>x.u===st.lunit))st.lunit=null;
+  const cur=unitRows().find(x=>x.u===st.lunit);
+  return`<div class="two"><section class="panel"><h3 style="font-size:15px">${list.length}세대${st.lf||st.lq?" (걸러짐)":""}</h3><div class="vlist" style="margin-top:8px">
+   ${list.map(x=>`<button class="vrow ${x.u===st.lunit?"on":""}" data-lu="${x.u}"><b>${unitLabel(x.u)} <small style="display:inline;color:var(--muted)">${x.type}</small></b><span class="num" style="font-size:13px">${won(x.total)}</span>
+    <small>${esc(x.name)} · ${x.live.length}품목${x.rows.length>x.live.length?` · 취소 ${x.rows.length-x.live.length}`:""} ${x.wait?'<span class="chip think">이체 대기</span>':""}${x.orig?'<span class="chip warn">원본</span>':""}${x.un?'<span class="chip warn">미통보</span>':""}${x.due?'<span class="chip">기한 임박</span>':""}</small></button>`).join("")||'<p class="empty">찾는 세대가 없습니다.</p>'}</div></section>
+   <section class="panel">${cur?unitCard(cur):'<h2>세대 카드</h2><p class="hint">왼쪽에서 세대를 고르거나 검색하세요. 고객 전화가 오면 동·호수부터 칩니다.</p>'}</section></div>`;
+}
+function unitCard(x){
+  const v=visitOf(x.u);const hist=HIST.filter(h=>h.unit===x.u).sort((a,b)=>b.at-a.at);
+  const rowsHtml=x.rows.map(r=>{const d=dueLeft(r);const live=r.status!=="취소";
+    return`<tr class="${live?"":"dead"}"><td><b>${esc(CATALOG.find(c=>c.id===r.cat).name)}</b><br><small>${esc(r.opt)}</small></td><td>${esc(COMPANIES[r.co].short)}</td><td class="num r">${won(r.amount)}<br><small>${r.method}</small></td>
+     <td>${r.pay==="이체 · 확인 대기"?`<button class="seg" data-lcf="${r.id}"><span class="pill w">이체 확인 대기</span></button>`:`<small>${esc(r.pay)}</small>`}</td>
+     <td><small>${md(r.date)} · ${esc(r.staff||"-")}</small><br>${live?(d>=0?`<span class="chip ${d<=3?"":"gray"}">철회 D-${d}</span>`:'<span class="chip gray">철회 기한 지남</span>'):'<span class="chip warn">취소</span>'}</td>
+     <td>${live&&canEdit()?`<button class="seg" data-act="change:${r.id}">변경</button>`:""}</td></tr>`;}).join("");
+  return`<div class="row" style="justify-content:space-between;align-items:baseline"><h2>${unitLabel(x.u)} <span class="chip">${x.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">계약 ${won(x.total)}원</span></div>
+   <div class="kv"><span>계약자</span><b>${esc(x.name)}</b><span>휴대폰</span><b class="num">${esc(x.phone||"-")}</b><span>주소</span><b>${esc((OWNER[x.u]&&OWNER[x.u].addr)||(v&&v.addr)||"-")}</b><span>방문 경로</span><b>${v?esc(viaLabel(v)):"방명록 없음"}${v&&v.consultant?" · 상담 "+esc(v.consultant):""}</b></div>
+   <div class="tblwrap" style="margin-top:12px"><table class="lt"><tr><th>품목</th><th>품목사</th><th class="r">금액</th><th>결제</th><th>계약·철회</th><th></th></tr>${rowsHtml}</table></div>
+   <div class="row" style="margin-top:12px;gap:8px;align-items:center">
+    ${ORIG[x.u]===false?`<span class="photo"><label class="cam" for="op-${x.u}">원본 수거 + 촬영</label><input id="op-${x.u}" type="file" accept="image/*" capture="environment" data-op="${x.u}"></span><button class="seg" data-orig="${x.u}" style="padding:8px 12px">사진 없이 수거 처리</button>`
+      :`<span class="chip ok" style="padding:5px 10px">원본 수거됨 ✓</span>${OPHOTO[x.u]?`<img class="thumb" src="${OPHOTO[x.u]}" alt="보관용 계약서 사진">`:'<span class="photo-chip">원본 사진 없음</span>'}<button class="seg" data-orig="${x.u}" style="padding:6px 10px">수거 취소</button>`}</div>
+   ${canEdit()?`<div class="acts"><button class="btn sub" data-act="cancel">취소 접수</button><button class="btn sub" data-act="add">추가 계약</button><button class="btn sub" data-act="owner">명의 변경</button><button class="btn sub" data-act="contact">연락처·주소 변경</button></div>`:""}
+   ${st.lact?actForm(x):""}
+   <h3 style="font-size:14px;margin-top:18px">이 세대 변경 이력</h3>
+   ${hist.length?hist.map(histLine).join(""):'<p class="empty" style="font-size:13px">변경 이력이 없습니다.</p>'}`;
+}
+function actForm(x){
+  const a=st.lact,f=st.lform;const live=x.live;
+  if(a==="cancel"){
+    const sel=live.filter(r=>f.ids&&f.ids[r.id]);
+    const judge=sel.map(r=>{const d=dueLeft(r);return`<li>${esc(CATALOG.find(c=>c.id===r.cat).name)}: ${d>=0?`<b style="color:var(--ok)">철회 기한 내 (D-${d})</b> — 계약금 전액 환불 대상`:`<b style="color:var(--warn)">기한 경과 (${-d}일)</b> — 약관의 해제·위약금 조항 검토`}</li>`;}).join("");
+    return`<div class="actbox"><h3>취소 접수</h3><p class="hint">취소할 품목을 고르세요. 일부 품목만 취소할 수 있습니다.</p>
+     ${live.map(r=>`<label class="opt" style="background:#fff"><input type="checkbox" data-cid="${r.id}" ${f.ids&&f.ids[r.id]?"checked":""}><span class="lbl">${esc(r.item)}</span><span class="price num">${won(r.amount)}</span></label>`).join("")}
+     <div class="row" style="margin-top:8px"><div class="field"><label for="f-reason">사유</label><select id="f-reason">${["단순 변심","배우자 반대","가격 부담","다른 업체 시공","분양권 전매","기타"].map(o=>`<option ${f.reason===o?"selected":""}>${o}</option>`).join("")}</select></div><div class="field"><label>접수 경로</label><select id="f-via">${["전화(주관사)","방문","문자"].map(o=>`<option ${f.via===o?"selected":""}>${o}</option>`).join("")}</select></div></div>
+     ${sel.length?`<ul class="judge">${judge}</ul><p class="note">판정은 근거 표시입니다. 환불·위약금 최종 판단은 품목사가 합니다.</p>`:""}
+     <div class="nav"><button class="btn ghost" data-act="">닫기</button><button class="btn" id="f-ok" ${sel.length?"":"disabled"}>취소 처리 · 통보문 만들기</button></div></div>`;
+  }
+  if(a&&a.startsWith("change:")){
+    const r=LEDGER.find(z=>z.id===a.split(":")[1]);const cat=CATALOG.find(c=>c.id===r.cat);const opts=catOpts(cat,r.type);
+    const no=f.opt?findOpt(f.opt).opt:null;const m=f.method||(r.method==="일시납"?"lump":"split");const na=no?lineAmt(no.price,cat.id,m):null;
+    return`<div class="actbox"><h3>변경 · ${esc(cat.name)}</h3><p class="hint">지금: ${esc(r.opt)} · ${r.method} · ${won(r.amount)}원</p>
+     ${opts.map(o=>`<label class="opt ${f.opt===o.id?"sel":""}" style="background:#fff"><input type="radio" name="nopt" data-nopt="${o.id}" ${f.opt===o.id?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span></label>`).join("")}
+     <div class="row" style="gap:6px;margin-top:8px"><button class="seg" data-nm="split" aria-pressed="${m==="split"}">분할</button><button class="seg" data-nm="lump" aria-pressed="${m==="lump"}">일시납</button></div>
+     ${no?`<p style="margin:10px 0 0">변경 후 <b class="num">${won(na)}원</b> · 차액 <b class="num" style="color:${na-r.amount>=0?"var(--navy)":"var(--warn)"}">${na-r.amount>=0?"+":""}${won(na-r.amount)}원</b></p>`:""}
+     <div class="nav"><button class="btn ghost" data-act="">닫기</button><button class="btn" id="f-ok" ${no&&(no.label!==r.opt||(m==="lump")!==(r.method==="일시납"))?"":"disabled"}>변경 처리 · 변경 계약서 출력</button></div></div>`;
+  }
+  if(a==="add"){
+    const have=new Set(live.map(r=>r.cat));const cats=CATALOG.filter(c=>catOpts(c,x.type).length&&(!have.has(c.id)||c.multi));
+    return`<div class="actbox"><h3>추가 계약</h3><p class="hint">계약자 정보는 그대로 들어갑니다. 계약서를 출력해 방문·우편으로 서명을 받습니다.</p>
+     ${cats.map(c=>`<div style="margin-top:8px"><b style="font-size:14px">${esc(c.name)}</b> <small style="color:var(--muted)">${esc(COMPANIES[c.co].short)}</small>${(()=>{const p=popularity(c.id,x.type);return p?` <span class="pop">${x.type} ${p.n}세대 중 ${p.pct}%</span>`:"";})()}
+       ${catOpts(c,x.type).filter(o=>!live.some(r=>r.opt===o.label&&r.cat===c.id)).map(o=>`<label class="opt ${f.opt===o.id?"sel":""}" style="background:#fff"><input type="radio" name="aopt" data-aopt="${o.id}" ${f.opt===o.id?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span></label>`).join("")}</div>`).join("")||'<p class="empty">추가할 수 있는 품목이 없습니다.</p>'}
+     <div class="nav"><button class="btn ghost" data-act="">닫기</button><button class="btn" id="f-ok" ${f.opt?"":"disabled"}>추가 계약 등록 · 계약서 출력</button></div></div>`;
+  }
+  if(a==="owner"||a==="contact"){
+    const own=a==="owner";
+    return`<div class="actbox"><h3>${own?"명의 변경 (분양권 양도)":"연락처·주소 변경"}</h3><p class="hint">${own?"계약서 제4조(권리의무의 승계)에 따른 처리입니다. 승계 확인서에 양도인·양수인이 서명합니다.":"모든 품목사 계약에 함께 반영되고 업체에 통보됩니다."}</p>
+     <div class="row">${own?`<div class="field"><label for="f-name">새 계약자 성명</label><input id="f-name" value="${esc(f.name||"")}"></div>`:""}<div class="field"><label for="f-phone">${own?"새 계약자 ":""}휴대폰</label><input id="f-phone" inputmode="tel" value="${esc(f.phone||"")}" placeholder="010-0000-0000"></div></div>
+     <div class="field" style="margin-top:8px"><label for="f-addr">주소${own?"":" (바뀐 경우)"}</label><input id="f-addr" value="${esc(f.addr||"")}"></div>
+     <div class="nav"><button class="btn ghost" data-act="">닫기</button><button class="btn" id="f-ok">${own?"명의 변경 · 승계 확인서 출력":"변경 저장 · 통보문 만들기"}</button></div></div>`;
+  }
+  return"";
+}
+function histLine(h){
+  return`<div class="hline ${h.notified?"":"un"}"><div class="row" style="justify-content:space-between;gap:6px"><b>${md(h.at)} ${hhmm(h.at)} · ${esc(h.kind)} · ${unitLabel(h.unit)}</b><span class="chip ${h.notified?"ok":"warn"}">${h.notified?"통보함":"미통보"}</span></div>
+   <div style="font-size:13px">${esc(h.text)}${h.judge?` · <b>${esc(h.judge)}</b>`:""} · 처리 ${esc(h.by)}</div>
+   <div class="msg" id="hm-${h.id}" style="margin-top:6px">${esc(h.msg)}</div><button class="seg" data-hcopy="${h.id}" style="margin-top:6px">${h.notified?"다시 복사":"통보문 복사 → 통보함"}</button></div>`;
+}
+
+/* --- 품목사별 --- */
+function coView(){
+  const rows=LEDGER.filter(r=>r.co===st.lco&&(!st.lq||matchQ(unitRows().find(x=>x.u===r.unit),st.lq))).sort((a,b)=>unitCode(a.unit).localeCompare(unitCode(b.unit)));
+  const live=rows.filter(r=>r.status!=="취소");
+  return`<section class="panel" style="margin-top:18px"><div class="row" style="gap:6px">${Object.keys(COMPANIES).filter(co=>LEDGER.some(r=>r.co===co)).map(co=>`<button class="seg" data-lco="${co}" aria-pressed="${st.lco===co}">${esc(COMPANIES[co].short)} <span class="num">${LEDGER.filter(r=>r.co===co&&r.status!=="취소").length}</span></button>`).join("")}</div>
+   <div class="row" style="justify-content:space-between;align-items:baseline;margin-top:14px"><h2>${esc(COMPANIES[st.lco].name)}</h2><span>계약 <b class="num">${live.length}</b>건 · <b class="num">${won(live.reduce((t,r)=>t+r.amount,0))}</b>원 · 취소 ${rows.length-live.length}건</span></div>
+   <p class="hint">업체에 넘기는 목록입니다. 시공 일정·해피콜에 필요한 정보 위주로 담습니다.</p>
+   <div class="row" style="gap:8px;margin-bottom:10px"><button class="btn sub" id="co-xls" style="flex:0 0 auto;padding:10px 16px">엑셀 내려받기</button><button class="btn sub" id="co-pkg" style="flex:0 0 auto;padding:10px 16px">행사 종료 패키지 (계약서 PDF + 사진)</button></div>
+   <div class="tblwrap"><table class="ledger"><tr><th>계약번호</th><th>세대</th><th>타입</th><th>품목</th><th class="num">금액</th><th>방식</th><th>결제</th><th>계약자</th><th>휴대폰</th><th>계약일</th><th>상태</th></tr>
+   ${rows.map(r=>{const x=unitRows().find(z=>z.u===r.unit);return`<tr class="${r.status==="취소"?"dead":""}"><td class="num">${r.no}</td><td>${unitLabel(r.unit)}</td><td>${r.type}</td><td>${esc(r.opt)}</td><td class="num">${won(r.amount)}</td><td>${r.method}</td><td>${esc(r.pay)}</td><td>${esc(x.name)}</td><td class="num">${esc(x.phone)}</td><td>${r.date}</td><td><span class="pill ${r.status==="취소"?"x":"c"}">${r.status}</span></td></tr>`;}).join("")}</table></div></section>`;
+}
+/* --- 변경 이력 --- */
+function histView(){
+  const hs=HIST.filter(h=>!st.hUn||!h.notified).filter(h=>!st.lq||matchQ(unitRows().find(x=>x.u===h.unit)||{u:h.unit,name:"",phone:"",rows:[]},st.lq)).sort((a,b)=>b.at-a.at);
+  return`<section class="panel" style="margin-top:18px"><div class="row" style="justify-content:space-between;align-items:center"><h2>변경 이력 ${HIST.length}건</h2>
+   <label style="font-size:14px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="hUn" ${st.hUn?"checked":""}> 미통보만 보기</label></div>
+   <p class="hint">모든 처리가 시각·처리자와 함께 남고 지울 수 없습니다. 통보문을 복사해야 '통보함'으로 바뀝니다.</p>
+   ${hs.map(histLine).join("")||'<p class="empty">해당 이력이 없습니다.</p>'}</section>`;
+}
+
+function addHist(unit,kind,text,cos,extra={}){
+  const x=unitRows().find(z=>z.u===unit);
+  const msg=`[${kind} 통보] ${unitLabel(unit)} ${x?x.name:""}\n${text}${extra.judge?"\n판정: "+extra.judge:""}\n해당 업체: ${cos.map(c=>COMPANIES[c].short).join(", ")}\n처리: ${st.user} (${md(Date.now())} ${hhmm(Date.now())})`;
+  HIST.push({id:"H"+(HIST.length+1)+"_"+Date.now()%1e5,at:Date.now(),by:st.user,unit,kind,text,judge:extra.judge||"",cos,msg,notified:false});
+}
+function bindLedger(){
+  $$("[data-lf]").forEach(b=>b.onclick=()=>{st.lf=st.lf===b.dataset.lf?null:b.dataset.lf;st.lv=st.lf==="un"?"hist":"unit";st.hUn=st.lf==="un";render();});
+  $$("[data-lv]").forEach(b=>b.onclick=()=>{st.lv=b.dataset.lv;render();});
+  const q=$("#lq");if(q){let comp=false;const upd=()=>{st.lq=q.value;$("#lbody").innerHTML=st.lv==="unit"?unitView():st.lv==="co"?coView():histView();bindLedgerBody();};
+    q.addEventListener("compositionstart",()=>comp=true);q.addEventListener("compositionend",()=>{comp=false;upd();});q.addEventListener("input",()=>{if(!comp)upd();});}
+  bindLedgerBody();
+}
+function bindLedgerBody(){
+  $$("[data-lu]").forEach(b=>b.onclick=()=>{st.lunit=b.dataset.lu;st.lact=null;st.lform={};render();});
+  $$("[data-lco]").forEach(b=>b.onclick=()=>{st.lco=b.dataset.lco;render();});
+  const hu=$("#hUn");if(hu)hu.onchange=()=>{st.hUn=hu.checked;render();};
+  $$("[data-lcf]").forEach(b=>b.onclick=()=>{const r=LEDGER.find(z=>z.id===b.dataset.lcf);r.pay="이체 · 입금 확인";toast("입금 확인으로 바꿨습니다.");render();});
+  $$("[data-orig]").forEach(b=>b.onclick=()=>{const u=b.dataset.orig;ORIG[u]=ORIG[u]===false?true:false;if(ORIG[u]===false)delete OPHOTO[u];render();});
+  $$("[data-op]").forEach(inp=>inp.onchange=()=>readPhoto(inp,url=>{const u=inp.dataset.op;OPHOTO[u]=url;ORIG[u]=true;toast("원본을 수거하고 사진을 남겼습니다.");render();}));
+  $$("[data-act]").forEach(b=>b.onclick=()=>{st.lact=b.dataset.act||null;st.lform={};render();});
+  $$("[data-hcopy]").forEach(b=>b.onclick=()=>{const h=HIST.find(z=>z.id===b.dataset.hcopy);copyText($("#hm-"+h.id),"복사했습니다. 업체 단톡방에 붙여넣으세요.");h.notified=true;setTimeout(render,60);});
+  const xls=$("#co-xls");if(xls)xls.onclick=()=>toast("실제 버전에서는 이 목록이 엑셀 파일로 내려받아집니다.");
+  const pkg=$("#co-pkg");if(pkg)pkg.onclick=()=>toast("실제 버전: 이 업체 계약서 PDF 묶음(수거 시 찍은 원본 사진 포함) + 엑셀 생성");
+  const f=st.lform;const x=unitRows().find(z=>z.u===st.lunit);
+  $$("[data-cid]").forEach(c=>c.onchange=()=>{f.ids=f.ids||{};f.ids[c.dataset.cid]=c.checked;render();});
+  const rs=$("#f-reason");if(rs)rs.onchange=()=>f.reason=rs.value;const vi=$("#f-via");if(vi)vi.onchange=()=>f.via=vi.value;
+  $$("[data-nopt]").forEach(c=>c.onchange=()=>{f.opt=c.dataset.nopt;render();});$$("[data-aopt]").forEach(c=>c.onchange=()=>{f.opt=c.dataset.aopt;render();});
+  $$("[data-nm]").forEach(b=>b.onclick=()=>{f.method=b.dataset.nm;render();});
+  [["f-name","name"],["f-phone","phone"],["f-addr","addr"]].forEach(([id,k])=>{const el=$("#"+id);if(el)el.oninput=()=>f[k]=el.value;});
+  const ok=$("#f-ok");if(!ok||!x)return;
+  ok.onclick=()=>{const a=st.lact;
+    if(a==="cancel"){const sel=x.live.filter(r=>f.ids&&f.ids[r.id]);sel.forEach(r=>r.status="취소");
+      const inT=sel.every(r=>dueLeft(r)>=0),outT=sel.every(r=>dueLeft(r)<0);
+      addHist(x.u,"취소",`품목: ${sel.map(r=>r.item).join(", ")}\n사유: ${f.reason||"단순 변심"} · 접수: ${f.via||"전화(주관사)"}`,[...new Set(sel.map(r=>r.co))],{judge:inT?"철회 기한 내":outT?"철회 기한 경과":"품목별 상이"});
+      toast("취소 처리했습니다. 아래 통보문을 업체에 보내세요.");}
+    else if(a.startsWith("change:")){const r=LEDGER.find(z=>z.id===a.split(":")[1]);const o=findOpt(f.opt);const m=f.method||(r.method==="일시납"?"lump":"split");
+      const before=`${r.opt} · ${r.method} · ${won(r.amount)}원`;r.opt=o.opt.label;r.item=o.cat.name+" · "+o.opt.label;r.amount=lineAmt(o.opt.price,o.cat.id,m);r.method=m==="lump"?"일시납":"분할";
+      addHist(x.u,"변경",`${o.cat.name}: ${before} → ${r.opt} · ${r.method} · ${won(r.amount)}원`,[r.co]);toast("변경했습니다 (시안: 변경 계약서 출력 생략).");}
+    else if(a==="add"){const o=findOpt(f.opt);const base=x.live[0]||x.rows[0];
+      LEDGER.push({id:"L"+(LEDGER.length+1),no:`${S.siteCode}-${unitCode(x.u)}-${o.cat.co}`,unit:x.u,type:x.type,cat:o.cat.id,opt:o.opt.label,item:o.cat.name+" · "+o.opt.label,co:o.cat.co,amount:o.opt.price,method:"분할",pay:"서명·결제 대기",status:"계약",name:base.name,date:today(),staff:st.user,desk:"-",from:"사후 추가"});
+      addHist(x.u,"추가 계약",`${o.cat.name} · ${o.opt.label} · ${won(o.opt.price)}원 (서명·결제 대기)`,[o.cat.co]);toast("추가 계약을 등록했습니다 (시안: 계약서 출력 생략).");}
+    else if(a==="owner"||a==="contact"){
+      if(a==="owner"&&!(f.name||"").trim()){toast("새 계약자 성명을 넣어 주세요.");return;}
+      if(f.phone&&!/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(f.phone.trim())){toast("휴대폰 번호 형식을 확인해 주세요.");return;}
+      const prev=x.name;OWNER[x.u]={...(OWNER[x.u]||{}),...(f.name?{name:f.name.trim()}:{}),...(f.phone?{phone:f.phone.trim()}:{}),...(f.addr?{addr:f.addr.trim()}:{})};
+      if(a==="owner")x.rows.forEach(r=>r.name=f.name.trim());
+      addHist(x.u,a==="owner"?"명의 변경":"연락처 변경",a==="owner"?`${prev} → ${f.name.trim()}${f.phone?" · "+f.phone:""}`:`${f.phone?"휴대폰 "+f.phone:""}${f.addr?" 주소 "+f.addr:""}`,[...new Set(x.live.map(r=>r.co))]);
+      toast(a==="owner"?"명의를 변경했습니다 (시안: 승계 확인서 출력 생략).":"변경했습니다.");}
+    st.lact=null;st.lform={};render();};
+}
+
+/* ===== 현장 설정 ===== */
+function viewSettings(){
+  const sum=S.stages.reduce((t,s)=>t+(+s.ratio||0),0);const inp="border:1px solid var(--line);border-radius:6px;padding:6px;background:#fff";
+  return`<section class="panel" style="margin-top:18px"><h2>현장 설정</h2><p class="hint">행사마다 바꾸는 값입니다. 바꾼 값은 이후 계약부터 적용되고 이미 체결된 계약은 그대로입니다.</p>
+  <div class="row"><div class="field"><label for="s-name">현장명</label><input id="s-name" value="${esc(S.siteName)}"></div><div class="field" style="flex:0 1 140px"><label for="s-code">현장코드</label><input id="s-code" value="${esc(S.siteCode)}"></div>
+  <div class="field" style="flex:0 1 130px"><label for="s-lump">일시납 할인(%)</label><input id="s-lump" type="number" value="${S.lumpDiscount}"></div>
+  <div class="field" style="flex:0 1 200px"><label for="s-print">출력 방식</label><select id="s-print">${Object.entries(PRINT).map(([k,v])=>`<option value="${k}" ${k===S.printMode?"selected":""}>${k}. ${v.name}</option>`).join("")}</select></div>
+  <div class="field" style="flex:0 1 160px"><label for="s-pop">인기도 표시 최소 세대</label><input id="s-pop" type="number" value="${S.popMin}"></div></div>
+  <h3 style="margin-top:20px;font-size:15px">납부 단계</h3>
+  ${S.stages.map((s,i)=>`<div class="stage-row"><div class="field"><label for="sn${i}">단계명</label><input id="sn${i}" data-sn="${i}" value="${esc(s.name)}"></div><div class="field"><label for="sr${i}">비율(%)</label><input id="sr${i}" data-sr="${i}" type="number" value="${s.ratio}"></div><div class="field f-due"><label for="sd${i}">납부일</label><input id="sd${i}" data-sd="${i}" value="${esc(s.due)}"></div><button class="x" data-sx="${i}" aria-label="삭제" ${S.stages.length<=2||i===0?"disabled":""}>✕</button></div>`).join("")}
+  <div class="row" style="margin-top:10px;align-items:center"><button class="seg" id="addStage" style="padding:8px 14px">+ 중도금 단계 추가</button><span class="sumchk ${sum===100?"good":"bad"}">합계 ${sum}% ${sum===100?"· 정상":"· 100%가 되어야 저장됩니다"}</span></div>
+  <h3 style="margin-top:20px;font-size:15px">직원 · 역할 · PIN</h3><p class="hint" style="margin-bottom:4px">안내: 방명록만 · 상담: 방명록·상담·현황 · 계약: 방명록·상담·계약석·현황·관리대장 · 관리: 전체. 계약석 수 <input id="s-desks" type="number" value="${S.desks}" style="width:60px;${inp}"></p>
+  <table class="ex-table"><tr><th>이름</th><th>역할</th><th>PIN</th><th></th></tr>${S.staff.map((s,i)=>`<tr><td><input data-stn="${i}" value="${esc(s.name)}" style="width:110px;${inp}"></td><td><select data-str="${i}" style="${inp}">${Object.keys(ROLES).map(r=>`<option ${r===s.role?"selected":""}>${r}</option>`).join("")}</select></td><td><input data-stp="${i}" value="${esc(s.pin)}" inputmode="numeric" maxlength="4" style="width:70px;${inp}"></td><td><button class="x" data-stx="${i}" style="height:34px;width:34px" aria-label="삭제">✕</button></td></tr>`).join("")}</table>
+  <button class="seg" id="addStaff" style="padding:8px 14px;margin-top:8px">+ 직원 추가</button>
+  <h3 style="margin-top:20px;font-size:15px">품목별 계약금 예외</h3><table class="ex-table"><tr><th>품목</th><th>계약금(%)</th></tr>${CATALOG.map(c=>`<tr><td>${esc(c.name)}</td><td><input data-ex="${c.id}" type="number" style="width:80px;${inp}" placeholder="공통" value="${S.itemDeposit[c.id]??""}"></td></tr>`).join("")}</table></section>`;
+}
+function bindSettings(){
+  $("#s-name").onchange=e=>{S.siteName=e.target.value;render();};$("#s-code").onchange=e=>{S.siteCode=e.target.value.toUpperCase();render();};
+  $("#s-lump").onchange=e=>{S.lumpDiscount=+e.target.value||0;};$("#s-print").onchange=e=>{S.printMode=e.target.value;};$("#s-pop").onchange=e=>{S.popMin=Math.max(1,+e.target.value||1);};
+  $("#s-desks").onchange=e=>{S.desks=Math.max(1,Math.min(9,+e.target.value||1));};
+  $$("[data-sn]").forEach(i=>i.onchange=e=>S.stages[+i.dataset.sn].name=e.target.value);$$("[data-sr]").forEach(i=>i.onchange=e=>{S.stages[+i.dataset.sr].ratio=+e.target.value||0;render();});
+  $$("[data-sd]").forEach(i=>i.onchange=e=>S.stages[+i.dataset.sd].due=e.target.value);$$("[data-sx]").forEach(b=>b.onclick=()=>{S.stages.splice(+b.dataset.sx,1);render();});
+  $("#addStage").onclick=()=>{const n=S.stages.filter(s=>s.name.startsWith("중도금")).length+1;S.stages.splice(S.stages.length-1,0,{name:"중도금 "+n+"차",ratio:0,due:""});render();};
+  $$("[data-stn]").forEach(i=>i.onchange=e=>S.staff[+i.dataset.stn].name=e.target.value.trim());$$("[data-str]").forEach(i=>i.onchange=e=>S.staff[+i.dataset.str].role=e.target.value);
+  $$("[data-stp]").forEach(i=>i.onchange=e=>{const v=e.target.value.replace(/\D/g,"");if(v.length!==4)toast("PIN은 숫자 4자리입니다.");else S.staff[+i.dataset.stp].pin=v;});
+  $$("[data-stx]").forEach(b=>b.onclick=()=>{S.staff.splice(+b.dataset.stx,1);render();});$("#addStaff").onclick=()=>{S.staff.push({name:"새 직원",pin:"9999",role:"계약"});render();};
+  $$("[data-ex]").forEach(i=>i.onchange=e=>{const v=e.target.value;if(v==="")delete S.itemDeposit[i.dataset.ex];else S.itemDeposit[i.dataset.ex]=+v;});
+}
+render();
+</script>
+
+</body>
+</html>
