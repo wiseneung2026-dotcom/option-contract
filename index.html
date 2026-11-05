@@ -344,7 +344,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v6.3 · 테스트 시트 연결</span>
+      <span class="sample">검토용 시안 v6.4 · 테스트 시트 연결</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -626,7 +626,7 @@ function viewGuestPhone(){
    `<h2>${esc(S.siteName)} 옵션 행사 방명록</h2><p class="hint">한 번 등록하면 상담과 계약에 그대로 쓰여서 다시 적지 않으셔도 됩니다.</p>${guestForm(false)}`}</div></div>`;
 }
 function viewGuestDesk(){
-  const list=VISITS.filter(v=>v.date===today()).sort((a,b)=>b.at-a.at);
+  const list=VISITS.filter(v=>v.date===visitDay()).sort((a,b)=>b.at-a.at);
   return`<div class="two"><section class="panel"><span class="who ${st.role==="안내"?"staff":"cust"}">${st.role==="안내"?"안내 직원":"방명록"}</span><h2>방명록 등록</h2>
   <div class="qrbox"><span class="qr-img">${QR_SVG}</span><span><b>입구 QR</b><br><small>휴대폰 카메라로 찍으면 고객용 방명록이 바로 열립니다.</small><br><small class="num" style="word-break:break-all;font-size:11px;color:var(--muted)">${GUEST_URL}</small><br>
    <span class="row" style="gap:6px;margin-top:6px"><button class="seg" id="g-phone-preview">고객 화면 미리보기</button><button class="seg" id="g-qr-print">QR 안내문 인쇄</button></span></span></div>
@@ -637,8 +637,12 @@ function viewGuestDesk(){
   <div class="vlist">${(()=>{const wl=waitList().map(x=>x.id);return list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow">${n?`<span class="ord">${n}</span>`:""}<span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"상담 대기 "+n+"번":statusName(v.status)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>';})()}</div></section></div>`;
 }
 /* 상담 대기 순번: 오늘 방문했고 아직 상담을 시작하지 않은 세대, 먼저 온 순서 */
-function waitList(){return VISITS.filter(v=>v.date===today()&&v.status==="방문").sort((a,b)=>a.at-b.at);}
+/* 검토용 시안: 오늘 방문이 하나도 없으면 가장 최근 방문일을 '오늘'처럼 보여 준다 (샘플을 넣은 다음 날에도 화면이 비지 않게). 실제 버전에서는 끔 */
+const DEMO_DAY=true;
+function visitDay(){const t=today();if(!DEMO_DAY||VISITS.some(v=>v.date===t))return t;return VISITS.reduce((m,v)=>v.date>m?v.date:m,"")||t;}
+function waitList(){return VISITS.filter(v=>v.date===visitDay()&&v.status==="방문").sort((a,b)=>a.at-b.at);}
 const waitMin=v=>Math.max(0,Math.round((Date.now()-v.at)/60000));
+const waitTxt=v=>{const m=waitMin(v);return m>180?"대기 중":m+"분 대기";};
 function addrResults(){const q=(st.addrQ||"").trim();if(!q)return"";const res=ADDR_SAMPLE.filter(a=>(a.road+a.jibun).includes(q));
   return res.length?res.map(a=>`<button type="button" class="addr-res" data-addr="${ADDR_SAMPLE.indexOf(a)}">${esc(a.road)}<small>지번 ${esc(a.jibun)} · 우편번호 ${a.zip}</small></button>`).join(""):'<p class="note">검색 결과가 없습니다. 시안에는 샘플 주소 5개만 있습니다(숭의, 봉담, 송도로, 송파).</p>';}
 /* 실제 주소 검색: 카카오(다음) 우편번호 서비스 — 무료, 키 없음. 인터넷이 안 되면 샘플 검색으로 대체 */
@@ -692,12 +696,12 @@ function bindGuest(phone){
 
 /* ===== 상담 체크리스트 ===== */
 function viewConsult(){
-  const td=VISITS.filter(v=>v.date===today());
+  const td=VISITS.filter(v=>v.date===visitDay());
   const mine=td.filter(x=>x.status==="상담중"&&x.consultant===st.user).sort((a,b)=>a.at-b.at);
   const wait=waitList();
   const others=td.filter(x=>x.status==="상담중"&&x.consultant!==st.user).sort((a,b)=>a.at-b.at);
   const v=VISITS.find(x=>x.id===st.cv);
-  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${n?`<span class="ord">${n}</span>`:""}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?waitMin(x)+"분 대기":statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장${!n&&x.consultant&&x.consultant!==st.user?" · "+esc(x.consultant)+" 실장":""}</small></button>`;
+  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${n?`<span class="ord">${n}</span>`:""}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?waitTxt(x):statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장${!n&&x.consultant&&x.consultant!==st.user?" · "+esc(x.consultant)+" 실장":""}</small></button>`;
   return`<div class="two"><section class="panel"><span class="who staff">상담 실장</span><h2>상담할 세대</h2>
    ${mine.length?`<h3 class="vh">내가 상담 중</h3><div class="vlist">${mine.map(x=>row(x,0)).join("")}</div>`:""}
    <h3 class="vh">상담 대기 · 입장 순서 ${wait.length}세대</h3><p class="hint" style="margin-top:0">먼저 온 순서입니다. 1번 고객부터 인사하고 [상담 시작]을 누르세요.</p>
@@ -707,7 +711,7 @@ function viewConsult(){
   <section class="panel">${v?consultSheet(v):'<h2>체크리스트</h2><p class="hint">왼쪽 상담 대기 목록에서 1번 고객을 누르세요.</p>'}</section></div>`;
 }
 function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;
-  return`<h2>${esc(v.name)} <span class="chip think">상담 대기 ${n}번 · ${waitMin(v)}분</span></h2>
+  return`<h2>${esc(v.name)} <span class="chip think">상담 대기 ${n}번 · ${waitTxt(v)}</span></h2>
    <div class="kv" style="margin:10px 0"><span>동·호수</span><b>${v.unit?unitLabel(v.unit)+" · "+v.type:"미확정 (상담 중 확인)"}</b><span>휴대폰</span><b class="num">${esc(v.phone||"-")}</b><span>입장</span><b>${hhmm(v.at)} · ${esc(viaLabel(v))}</b></div>
    ${n>1?`<p class="note">앞에 ${n-1}세대가 더 기다리고 있습니다. 순서를 건너뛰는 경우에만 이 고객을 먼저 상담하세요.</p>`:""}
    <div class="nav"><button class="btn" id="cv-start">상담 시작</button></div>
