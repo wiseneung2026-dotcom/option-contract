@@ -530,7 +530,7 @@ function syncPull(){if(!API||st.guestOnly)return Promise.resolve();if(SYNC.pullP
   SYNC.pullP=syncPullOnce().finally(()=>{SYNC.pullP=null;});return SYNC.pullP;}
 /* v6.5: 버튼을 누르기 전에 출발한 가져오기 결과가 방금 바꾼 기록을 옛 값으로 덮지 않게 한다 */
 async function syncPullOnce(){const t0=Date.now();let skipped=false;
-  try{const r=await fetch(API+(API.includes("?")?"&":"?")+"since="+Math.max(0,SYNC.last-3000)).then(x=>x.json());if(!r.ok)throw 0;
+  try{const r=await fetch(API+(API.includes("?")?"&":"?")+"since="+Math.max(0,SYNC.last-30000)).then(x=>x.json());if(!r.ok)throw 0;
     if(r.resetAt&&r.resetAt>SYNC.resetAt){if(SYNC.loaded){VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);SYNC.hash={};SYNC.pending={};SYNC.ack={};SYNC.dirtyRender=true;}SYNC.resetAt=r.resetAt;}
     let changed=false;
     r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);if(SYNC.pending[k]){skipped=true;return;}if(SYNC.ack[k]!=null){if(t0<=SYNC.ack[k]){skipped=true;return;}if(t0-SYNC.ack[k]>60000)delete SYNC.ack[k];}if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);changed=true;});
@@ -546,7 +546,7 @@ function syncBadge(){const el=document.getElementById("syncBadge");if(!el)return
 function initSync(){
   if(!API)return;
   try{const p=JSON.parse(lsGet("oc_pending")||"{}");Object.assign(SYNC.pending,p);}catch(e){}
-  if(!st.guestOnly){syncPull();setInterval(()=>{syncPull().then(syncPush);},4000);}
+  if(!st.guestOnly){syncPull();setInterval(()=>{syncPull().then(syncPush);},4000);}else setInterval(syncPush,4000); /* v6.5: 고객 화면도 못 보낸 기록을 4초마다 다시 보냄 */
   setInterval(()=>{if(SYNC.dirtyRender)syncRender();syncBadge();},1500);
   document.addEventListener("focusout",()=>setTimeout(()=>{if(SYNC.dirtyRender)syncRender();},50));
 }
