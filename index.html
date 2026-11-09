@@ -344,7 +344,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v6.6 · 테스트 시트 연결</span>
+      <span class="sample">검토용 시안 v6.7 · 테스트 시트 연결</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -517,7 +517,7 @@ function syncSummary(c,d){if(c==="visits")return`${d.unit||"동호 미정"} ${d.
 function scanDirty(){if(!API)return;syncRecs().forEach(([c,id,d])=>{const k=c+"|"+id,j=JSON.stringify(d);if(SYNC.hash[k]!==j){SYNC.hash[k]=j;SYNC.pending[k]={col:c,id,data:d,by:st.user||"고객",summary:syncSummary(c,d)};SYNC.ack[k]=Infinity;}});
   lsSet("oc_pending",JSON.stringify(SYNC.pending));}
 async function syncPush(){if(!API||SYNC.busy)return;const keys=Object.keys(SYNC.pending);if(!keys.length)return;SYNC.busy=true;
-  try{const rows=keys.map(k=>SYNC.pending[k]);const sent={};keys.forEach(k=>{sent[k]=JSON.stringify(SYNC.pending[k].data);});const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({rows})}).then(x=>x.json());
+  try{const rows=keys.map(k=>SYNC.pending[k]);const sent={};keys.forEach(k=>{sent[k]=JSON.stringify(SYNC.pending[k].data);});const r=await fetchT(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({rows})},20000).then(x=>x.json());
     /* v6.5: 보내는 사이에 더 새로 바뀐 기록은 지우지 않고 다음에 다시 보낸다 */
     if(r.ok){const ackT=Date.now();keys.forEach(k=>{if(SYNC.pending[k]&&JSON.stringify(SYNC.pending[k].data)===sent[k]){delete SYNC.pending[k];SYNC.ack[k]=ackT;}});lsSet("oc_pending",JSON.stringify(SYNC.pending));SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";}
   }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}finally{SYNC.busy=false;syncBadge();if(SYNC.ok&&Object.keys(SYNC.pending).length)setTimeout(syncPush,100);}}
@@ -526,11 +526,13 @@ function syncApply(c,id,d){
   else if(c==="ledger"){const i=LEDGER.findIndex(x=>x.id===id);if(i>=0)LEDGER[i]=d;else LEDGER.push(d);}
   else if(c==="hist"){const i=HIST.findIndex(x=>x.id===id);if(i>=0)HIST[i]=d;else HIST.push(d);}
   else if(c==="meta"){if(d.k==="ORIG")ORIG[d.u]=d.v;if(d.k==="OWNER")OWNER[d.u]=d.v;}}
+/* v6.7: 응답 없이 멈춘 요청은 정해진 시간 뒤 끊는다 (멈춘 요청 하나가 이후 동기화를 막지 않게) */
+function fetchT(url,opt,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,Object.assign({},opt||{},{signal:c.signal})).finally(()=>clearTimeout(t));}
 function syncPull(){if(!API||st.guestOnly)return Promise.resolve();if(SYNC.pullP)return SYNC.pullP;
   SYNC.pullP=syncPullOnce().finally(()=>{SYNC.pullP=null;});return SYNC.pullP;}
 /* v6.5: 버튼을 누르기 전에 출발한 가져오기 결과가 방금 바꾼 기록을 옛 값으로 덮지 않게 한다 */
 async function syncPullOnce(){const t0=Date.now();let skipped=false;
-  try{const r=await fetch(API+(API.includes("?")?"&":"?")+"since="+Math.max(0,SYNC.last-30000)).then(x=>x.json());if(!r.ok)throw 0;
+  try{const r=await fetchT(API+(API.includes("?")?"&":"?")+"since="+Math.max(0,SYNC.last-30000),{},10000).then(x=>x.json());if(!r.ok)throw 0;
     if(r.resetAt&&r.resetAt>SYNC.resetAt){if(SYNC.loaded){VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);SYNC.hash={};SYNC.pending={};SYNC.ack={};SYNC.dirtyRender=true;}SYNC.resetAt=r.resetAt;}
     let changed=false;
     r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);if(SYNC.pending[k]){skipped=true;return;}if(SYNC.ack[k]!=null){if(t0<=SYNC.ack[k]){skipped=true;return;}if(t0-SYNC.ack[k]>60000)delete SYNC.ack[k];}if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);changed=true;});
