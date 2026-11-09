@@ -344,7 +344,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v6.4 · 테스트 시트 연결</span>
+      <span class="sample">검토용 시안 v6.5 · 테스트 시트 연결</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -506,7 +506,7 @@ const statusName=s=>({방문:"방문",상담중:"상담 중",계약대기:"계�
  * render() 때마다 바뀐 기록을 찾아 시트로 보내고(push), 4초마다 다른 기기의 변경을 받아온다(pull).
  * 고객 QR 화면은 보내기만 하고 다른 사람 정보는 받아오지 않는다. */
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const SYNC={hash:{},pending:{},last:0,resetAt:0,ok:null,at:0,busy:false,err:"",dirtyRender:false};
+const SYNC={ack:{},pullP:null,hash:{},pending:{},last:0,resetAt:0,ok:null,at:0,busy:false,err:"",dirtyRender:false};
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 let API=lsGet("oc_api")||DEFAULT_API;
@@ -514,23 +514,26 @@ function syncRecs(){const o=[];
   VISITS.forEach(v=>o.push(["visits",v.id,v]));LEDGER.forEach(r=>o.push(["ledger",r.id,r]));HIST.forEach(h=>o.push(["hist",h.id,h]));
   Object.keys(ORIG).forEach(u=>o.push(["meta","ORIG:"+u,{k:"ORIG",u,v:ORIG[u]}]));Object.keys(OWNER).forEach(u=>o.push(["meta","OWNER:"+u,{k:"OWNER",u,v:OWNER[u]}]));return o;}
 function syncSummary(c,d){if(c==="visits")return`${d.unit||"동호 미정"} ${d.name} · ${d.status}`;if(c==="ledger")return`${d.unit} ${d.item} · ${won(d.amount)} · ${d.status}`;if(c==="hist")return`${d.unit} ${d.kind} · ${(d.text||"").split("\n")[0]}`;return`${d.k} ${d.u}`;}
-function scanDirty(){if(!API)return;syncRecs().forEach(([c,id,d])=>{const k=c+"|"+id,j=JSON.stringify(d);if(SYNC.hash[k]!==j){SYNC.hash[k]=j;SYNC.pending[k]={col:c,id,data:d,by:st.user||"고객",summary:syncSummary(c,d)};}});
+function scanDirty(){if(!API)return;syncRecs().forEach(([c,id,d])=>{const k=c+"|"+id,j=JSON.stringify(d);if(SYNC.hash[k]!==j){SYNC.hash[k]=j;SYNC.pending[k]={col:c,id,data:d,by:st.user||"고객",summary:syncSummary(c,d)};SYNC.ack[k]=Infinity;}});
   lsSet("oc_pending",JSON.stringify(SYNC.pending));}
 async function syncPush(){if(!API||SYNC.busy)return;const keys=Object.keys(SYNC.pending);if(!keys.length)return;SYNC.busy=true;
   try{const rows=keys.map(k=>SYNC.pending[k]);const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({rows})}).then(x=>x.json());
-    if(r.ok){keys.forEach(k=>{if(SYNC.pending[k]&&JSON.stringify(SYNC.pending[k].data)===SYNC.hash[k])delete SYNC.pending[k];});lsSet("oc_pending",JSON.stringify(SYNC.pending));SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";}
+    if(r.ok){const ackT=Date.now();keys.forEach(k=>{SYNC.ack[k]=ackT;});keys.forEach(k=>{if(SYNC.pending[k]&&JSON.stringify(SYNC.pending[k].data)===SYNC.hash[k])delete SYNC.pending[k];});lsSet("oc_pending",JSON.stringify(SYNC.pending));SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";}
   }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}finally{SYNC.busy=false;syncBadge();}}
 function syncApply(c,id,d){
   if(c==="visits"){const i=VISITS.findIndex(x=>x.id===id);if(i>=0)VISITS[i]=d;else VISITS.push(d);}
   else if(c==="ledger"){const i=LEDGER.findIndex(x=>x.id===id);if(i>=0)LEDGER[i]=d;else LEDGER.push(d);}
   else if(c==="hist"){const i=HIST.findIndex(x=>x.id===id);if(i>=0)HIST[i]=d;else HIST.push(d);}
   else if(c==="meta"){if(d.k==="ORIG")ORIG[d.u]=d.v;if(d.k==="OWNER")OWNER[d.u]=d.v;}}
-async function syncPull(){if(!API||st.guestOnly)return;
+function syncPull(){if(!API||st.guestOnly)return Promise.resolve();if(SYNC.pullP)return SYNC.pullP;
+  SYNC.pullP=syncPullOnce().finally(()=>{SYNC.pullP=null;});return SYNC.pullP;}
+/* v6.5: 버튼을 누르기 전에 출발한 가져오기 결과가 방금 바꾼 기록을 옛 값으로 덮지 않게 한다 */
+async function syncPullOnce(){const t0=Date.now();let skipped=false;
   try{const r=await fetch(API+(API.includes("?")?"&":"?")+"since="+Math.max(0,SYNC.last-3000)).then(x=>x.json());if(!r.ok)throw 0;
-    if(r.resetAt&&r.resetAt>SYNC.resetAt){if(SYNC.loaded){VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);SYNC.hash={};SYNC.pending={};SYNC.dirtyRender=true;}SYNC.resetAt=r.resetAt;}
+    if(r.resetAt&&r.resetAt>SYNC.resetAt){if(SYNC.loaded){VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);SYNC.hash={};SYNC.pending={};SYNC.ack={};SYNC.dirtyRender=true;}SYNC.resetAt=r.resetAt;}
     let changed=false;
-    r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);if(SYNC.pending[k])return;if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);changed=true;});
-    SYNC.last=r.now;SYNC.loaded=true;SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";
+    r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);if(SYNC.pending[k]){skipped=true;return;}if(SYNC.ack[k]!=null){if(t0<=SYNC.ack[k]){skipped=true;return;}if(t0-SYNC.ack[k]>60000)delete SYNC.ack[k];}if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);changed=true;});
+    if(!skipped)SYNC.last=r.now;SYNC.loaded=true;SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";
     if(changed||SYNC.dirtyRender)syncRender();
   }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}syncBadge();}
 function syncRender(){const a=document.activeElement;if((a&&/INPUT|TEXTAREA|SELECT|IFRAME/.test(a.tagName)&&a.type!=="checkbox")||st.addrOpen){SYNC.dirtyRender=true;return;}SYNC.dirtyRender=false;render();}
