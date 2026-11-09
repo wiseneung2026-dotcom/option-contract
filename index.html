@@ -517,9 +517,10 @@ function syncSummary(c,d){if(c==="visits")return`${d.unit||"동호 미정"} ${d.
 function scanDirty(){if(!API)return;syncRecs().forEach(([c,id,d])=>{const k=c+"|"+id,j=JSON.stringify(d);if(SYNC.hash[k]!==j){SYNC.hash[k]=j;SYNC.pending[k]={col:c,id,data:d,by:st.user||"고객",summary:syncSummary(c,d)};SYNC.ack[k]=Infinity;}});
   lsSet("oc_pending",JSON.stringify(SYNC.pending));}
 async function syncPush(){if(!API||SYNC.busy)return;const keys=Object.keys(SYNC.pending);if(!keys.length)return;SYNC.busy=true;
-  try{const rows=keys.map(k=>SYNC.pending[k]);const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({rows})}).then(x=>x.json());
-    if(r.ok){const ackT=Date.now();keys.forEach(k=>{SYNC.ack[k]=ackT;});keys.forEach(k=>{if(SYNC.pending[k]&&JSON.stringify(SYNC.pending[k].data)===SYNC.hash[k])delete SYNC.pending[k];});lsSet("oc_pending",JSON.stringify(SYNC.pending));SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";}
-  }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}finally{SYNC.busy=false;syncBadge();}}
+  try{const rows=keys.map(k=>SYNC.pending[k]);const sent={};keys.forEach(k=>{sent[k]=JSON.stringify(SYNC.pending[k].data);});const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({rows})}).then(x=>x.json());
+    /* v6.5: 보내는 사이에 더 새로 바뀐 기록은 지우지 않고 다음에 다시 보낸다 */
+    if(r.ok){const ackT=Date.now();keys.forEach(k=>{if(SYNC.pending[k]&&JSON.stringify(SYNC.pending[k].data)===sent[k]){delete SYNC.pending[k];SYNC.ack[k]=ackT;}});lsSet("oc_pending",JSON.stringify(SYNC.pending));SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";}
+  }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}finally{SYNC.busy=false;syncBadge();if(SYNC.ok&&Object.keys(SYNC.pending).length)setTimeout(syncPush,100);}}
 function syncApply(c,id,d){
   if(c==="visits"){const i=VISITS.findIndex(x=>x.id===id);if(i>=0)VISITS[i]=d;else VISITS.push(d);}
   else if(c==="ledger"){const i=LEDGER.findIndex(x=>x.id===id);if(i>=0)LEDGER[i]=d;else LEDGER.push(d);}
