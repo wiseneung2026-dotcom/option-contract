@@ -344,7 +344,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v6.7 · 테스트 시트 연결</span>
+      <span class="sample">검토용 시안 v6.8 · 테스트 시트 연결</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -359,8 +359,8 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
 /* ===== 현장 설정 (실제 버전: 구글시트 "현장설정") ===== */
 const S = {
   siteName:"샘플 현장", siteCode:"SMP01",
-  stages:[{name:"계약금",ratio:30,due:"계약일"},{name:"중도금 1차",ratio:30,due:"2027-04-30"},{name:"잔금",ratio:40,due:"입주지정일"}],
-  lumpDiscount:3, roundUnit:1000, itemDeposit:{FILM:20},
+  stages:[{name:"계약금",ratio:20,due:"계약일"},{name:"중도금",ratio:70,due:"(확정 예정)"},{name:"잔금",ratio:10,due:"입주지정일"}],
+  lumpDiscount:3, roundUnit:1000, itemDeposit:{},
   staff:[{name:"정안내",pin:"5555",role:"안내"},{name:"한상담",pin:"4444",role:"상담"},{name:"오상담",pin:"6666",role:"상담"},
          {name:"김민수",pin:"1111",role:"계약"},{name:"이지은",pin:"2222",role:"계약"},{name:"박준호",pin:"3333",role:"계약"},{name:"최종태",pin:"0000",role:"관리"}],
   desks:5, printMode:"A", popMin:10
@@ -735,11 +735,11 @@ function consultSheet(v){
      <div class="tri" role="group" aria-label="${esc(c.name)} 상태"><button class="seg" data-st="${c.id}:sel" aria-pressed="${it.state==="sel"}">선택</button><button class="seg t" data-st="${c.id}:think" aria-pressed="${it.state==="think"}">고민 중</button><button class="seg" data-st="${c.id}:no" aria-pressed="${it.state==="no"}">안 함</button></div></div>
      ${it.state!=="no"?opts.map(o=>{const on=it.opts[o.id];return`<label class="opt ${on?"sel":""}" style="background:#fff"><input type="checkbox" data-co="${c.id}:${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
        ${on&&it.state==="sel"?`<span class="pay"><button type="button" class="seg" data-cm="${c.id}:${o.id}:split" aria-pressed="${on==="split"}">분할</button><button type="button" class="seg" data-cm="${c.id}:${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join(""):""}
-     ${it.state==="think"?`<input class="memo" data-memo="${c.id}" value="${esc(it.memo||"")}" placeholder="계약 실장에게 전할 메모 (예: 배우자와 상의 후 결정)">`:""}</div>`;}).join("");
+     ${it.state!=="no"?`<input class="memo" data-memo="${c.id}" value="${esc(it.memo||"")}" placeholder="${it.state==="think"?"계약 실장에게 전할 메모 (예: 배우자와 상의 후 결정)":"메모 (선택 · 예: 색상 확인 필요)"}">`:""}</div>`;}).join("");
   return`<div class="row" style="justify-content:space-between;align-items:baseline"><h2>${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">선택 합계 ${won(total)}원</span></div>
    <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입에 없는 항목은 보이지 않습니다.</p>${html}
    <div class="nav"><button class="btn" id="cv-done">${v.status==="계약대기"?"수정 저장 (대기 유지)":"상담 완료 · 계약석 대기 등록"}</button></div>
-   <p class="note">고민 중 ${thinkN}개는 계약석 화면 맨 위에 메모와 함께 표시됩니다.</p>`;
+   <p class="note">고민 중 ${thinkN}개와 메모는 계약석 화면 맨 위와 상담 확인서에 함께 표시됩니다.</p>`;
 }
 function bindConsult(){
   $$("[data-cv]").forEach(b=>b.onclick=()=>{st.cv=b.dataset.cv;render();});
@@ -755,8 +755,9 @@ function bindConsult(){
   $$("[data-co]").forEach(cb=>cb.onchange=()=>{const[c,o]=cb.dataset.co.split(":");const cat=CATALOG.find(x=>x.id===c);const it=v.items[c];
     if(cb.checked){if(!cat.multi)it.opts={};it.opts[o]="split";}else delete it.opts[o];render();});
   $$("[data-cm]").forEach(b=>b.onclick=e=>{e.preventDefault();const[c,o,m]=b.dataset.cm.split(":");v.items[c].opts[o]=m;render();});
-  $$("[data-memo]").forEach(i=>i.oninput=()=>{v.items[i.dataset.memo].memo=i.value;});
-  const d=$("#cv-done");if(d)d.onclick=()=>{const vals=Object.values(v.items);
+  /* v6.8: 메모는 다른 기기 기록이 들어와도 최신 기록에 쓰고, 입력을 멈추면 바로 시트로 보낸다 */
+  $$("[data-memo]").forEach(i=>{const save=()=>{const vv=VISITS.find(x=>x.id===st.cv)||v;const it=vv.items[i.dataset.memo];if(!it)return;it.memo=i.value;afterRender();};i.oninput=()=>{clearTimeout(i._t);i._t=setTimeout(save,500);};i.onchange=save;i.onblur=save;});
+  const d=$("#cv-done");if(d)d.onclick=()=>{$$("[data-memo]").forEach(i=>{const vv=VISITS.find(x=>x.id===st.cv)||v;if(vv.items[i.dataset.memo])vv.items[i.dataset.memo].memo=i.value;});const vals=Object.values(v.items);
     if(!vals.some(it=>it.state==="sel"&&Object.keys(it.opts).length)&&!vals.some(it=>it.state==="think")){toast("선택하거나 고민 중인 품목이 하나 이상 있어야 합니다.");return;}
     if(v.status!=="계약대기"){v.status="계약대기";v.queueAt=Date.now();toast(`계약석 대기 ${queue().length}번째로 등록했습니다. 고객에게 안내해 주세요.`);}else toast("수정했습니다.");
     st.cv=null;render();};
@@ -769,7 +770,7 @@ function renderSteps(){const el=$("#steps");if(!st.user||st.view!=="contract"){e
   el.innerHTML=STEPS.map((s,i)=>`<button class="step ${i===st.step?"on":""} ${i<st.step?"done":""}" data-go="${i}" ${i>maxStep()?"disabled":""}><b>${i+1}</b>${s}</button>`).join("");
   $$("[data-go]").forEach(b=>b.onclick=()=>{st.step=+b.dataset.go;render();});}
 function maxStep(){if(!utype())return 0;if(!selected().length)return 1;if(!custOK())return 2;if(!st.printed)return 3;return 4;}
-const custOK=()=>st.cust.name.trim()&&/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(st.cust.phone.trim())&&st.cust.addr&&(curVisit()||st.consent1)&&st.consent2;
+const custOK=()=>st.cust.name.trim()&&/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(st.cust.phone.trim())&&(curVisit()||st.consent1)&&st.consent2;
 const payDone=p=>p&&((p.method==="card"&&p.done)||(p.method==="transfer"&&p.requested));
 const payOK=()=>Object.keys(byCompany()).every(co=>payDone(st.paid[co]));
 function callVisit(v){
@@ -810,12 +811,14 @@ function sidePanel(){
    ${st.step>0?'<button class="btn" id="custView" style="margin-top:10px;width:100%;background:var(--accent)">고객 보기 화면으로 (고객에게 보여주기)</button>':""}
    ${st.step>0?'<button class="seg" id="toQueue" style="margin-top:10px;width:100%;padding:8px">대기열로 돌아가기 (이 고객 대기 유지)</button>':""}</aside>`;
 }
-function thinkBox(){const v=curVisit();if(!v)return"";const th=Object.entries(v.items).filter(([c,it])=>it.state==="think");if(!th.length)return"";
+function thinkBox(){const v=curVisit();if(!v)return"";const th=Object.entries(v.items).filter(([c,it])=>it.state==="think");const sm=Object.entries(v.items).filter(([c,it])=>it.state==="sel"&&it.memo);if(!th.length&&!sm.length)return"";
+  if(!th.length)return`<div class="think-box"><h3>상담 실장 메모 (${esc(v.consultant||"")})</h3><ul style="margin:0;padding-left:18px">${sm.map(([c,it])=>`<li><b>${esc(CATALOG.find(x=>x.id===c).name)}</b> — ${esc(it.memo)}</li>`).join("")}</ul></div>`;
   return`<div class="think-box"><h3>상담 실장 메모 · 고민 중 ${th.length}개 (${esc(v.consultant||"")})</h3><ul style="margin:0;padding-left:18px">${th.map(([c,it])=>{const cat=CATALOG.find(x=>x.id===c);const p=popularity(c,v.type);
-    return`<li><b>${esc(cat.name)}</b>${Object.keys(it.opts).length?" ("+Object.keys(it.opts).map(id=>esc(findOpt(id).opt.label)).join(", ")+")":""} — ${esc(it.memo||"메모 없음")}${p?` <span class="pop">· ${v.type} ${p.n}세대 중 ${p.pct}% 선택</span>`:""}</li>`;}).join("")}</ul></div>`;}
+    return`<li><b>${esc(cat.name)}</b>${Object.keys(it.opts).length?" ("+Object.keys(it.opts).map(id=>esc(findOpt(id).opt.label)).join(", ")+")":""} — ${esc(it.memo||"메모 없음")}${p?` <span class="pop">· ${v.type} ${p.n}세대 중 ${p.pct}% 선택</span>`:""}</li>`;}).join("")}${sm.map(([c,it])=>`<li><b>${esc(CATALOG.find(x=>x.id===c).name)}</b> (선택) — ${esc(it.memo)}</li>`).join("")}</ul></div>`;}
 function viewItems(){
   const t=utype();const prev=LEDGER.filter(l=>l.unit===unitKey()&&l.status!=="취소");const v=curVisit();
-  return`<section class="panel"><span class="who staff">계약 실장 + 고객</span><h2>품목 확인</h2>
+  return`<section class="panel"><span class="who staff">계약 실장 + 고객</span><div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">품목 확인</h2><button class="btn" id="ckPrint" style="background:var(--accent);flex:0 0 auto;padding:10px 18px">🖨 상담 확인서 출력${v&&v.ckPrints&&v.ckPrints.length?` (${v.ckPrints.length}회 출력됨)`:""}</button></div>
+  <p class="hint" style="margin-top:6px">호출하면 먼저 확인서를 뽑아 고객에게 드리고, 종이를 같이 보며 계약을 진행하세요. 고민 중 품목을 추가하면 다시 뽑을 수 있습니다.</p>
   ${thinkBox()}
   <p class="hint">${v?"상담에서 선택한 품목이 체크되어 있습니다. 고민 중 품목을 마지막으로 권하고, 바뀐 것만 고치세요.":t+" 타입 선택지만 보입니다."}</p>
   ${prev.length?`<div class="alert" style="margin-bottom:12px">이미 계약한 품목: ${prev.map(p=>esc(p.item)).join(", ")}. 추가 계약으로 진행됩니다.${prev[0].name&&v&&prev[0].name[0]!==v.name[0]?" · 기존 계약자와 이름이 다릅니다. 명의를 확인하세요.":""}</div>`:""}
@@ -832,7 +835,7 @@ function viewCust(){
   <p class="hint">방문자와 계약 명의가 다르면 이름·휴대폰을 고치세요. 출력 후 총괄표에 동·호수와 성명을 자필로 한 번 더 적습니다.</p>
   <div class="row">${f("name","성명 (계약자)","홍길동")}${f("phone","휴대폰","010-1234-5678","tel","tel")}</div>
   <div class="row" style="margin-top:12px">${f("birth","생년월일","1980-01-01","text","numeric")}${f("cash","현금영수증 번호 (선택)","휴대폰번호와 같으면 비워두세요","text","numeric")}</div>
-  <div style="margin-top:12px"><div class="addr-row"><div class="field"><label>현 주소</label>${st.cust.addr?`<div class="addr-picked">(${esc(st.cust.zip)}) ${esc(st.cust.addr)}</div>`:`<div class="addr-picked" style="color:var(--muted)">방명록에 주소가 없습니다. 검색하세요</div>`}</div><button type="button" class="addr-btn" id="addrOpen">${st.cust.addr?"다시 검색":"주소 검색"}</button></div>
+  <div style="margin-top:12px"><div class="addr-row"><div class="field"><label>현 주소</label>${st.cust.addr?`<div class="addr-picked">(${esc(st.cust.zip)}) ${esc(st.cust.addr)}</div>`:`<div class="addr-picked" style="color:var(--muted)">주소 없음 (선택 입력 · 비워 두어도 진행됩니다)</div>`}</div><button type="button" class="addr-btn" id="addrOpen">${st.cust.addr?"다시 검색":"주소 검색"}</button></div>
    ${st.addrOpen?addrBox():""}
    ${st.cust.addr?`<div class="row" style="margin-top:10px">${f("addrDetail","상세주소","예: 103동 1502호")}</div>`:""}</div>
   ${v?`<div class="badge-src" style="margin-top:16px">① 개인정보 수집·이용 동의: 방명록 등록 때 받았습니다 (${hhmm(v.at)}, 계약 목적 포함)</div>`:`<label class="consent"><input type="checkbox" id="consent1" ${st.consent1?"checked":""}><span><b>① 개인정보 수집·이용 동의 (필수)</b><br>항목: 성명, 휴대폰, 생년월일, 주소 · 목적: 옵션 계약의 체결·이행·하자보수 · 보유: 계약 종료 후 관계법령이 정한 기간 · 방명록 없이 계약할 때만 표시</span></label>`}
@@ -842,7 +845,7 @@ function viewCust(){
 function contractNo(co){return`${S.siteCode}-${st.dong}${st.ho.padStart(4,"0")}-${co}`;}
 function payLabel(p){return p.method==="card"?"카드 결제":p.confirmed?"이체 · 입금 확인":"이체 · 확인 대기";}
 function viewPrint(){
-  const g=byCompany();const c=st.cust;const fullAddr=`(${c.zip}) ${c.addr} ${c.addrDetail}`.trim();const P=PRINT[S.printMode];
+  const g=byCompany();const c=st.cust;const fullAddr=c.addr?`(${c.zip}) ${c.addr} ${c.addrDetail||""}`.trim():"-";const P=PRINT[S.printMode];
   const flow=`<section class="panel"><span class="who staff">계약 실장</span><h2>출력·서명</h2>
    <p class="hint">미리보기로 고객과 내용을 확인한 뒤 인쇄합니다. 서명이 끝나면 [다음]으로 결제 단계로 갑니다. 원본(보관용) 촬영은 정리 실장이 수거할 때 합니다.</p>
    <div class="flow">
@@ -905,10 +908,57 @@ function bindContract(){
   $$("[data-cf]").forEach(b=>b.onclick=()=>{const co=b.dataset.cf;st.paid[co]={...st.paid[co],confirmed:!st.paid[co].confirmed};render();});
   const pr=$("#doPrint");if(pr)pr.onclick=()=>{st.printed=true;render();setTimeout(()=>window.print(),300);toast("서명 대기로 저장 · 인쇄 창을 엽니다");};
   $$("[data-cd]").forEach(b=>b.onclick=()=>{const co=b.dataset.cd;st.paid[co]={...st.paid[co],done:!st.paid[co].done};render();});
+  const ck=$("#ckPrint");if(ck)ck.onclick=printCheckSheet;
   const cf=$("#confirm");if(cf)cf.onclick=saveContract;
   const n=$("#next");if(n)n.onclick=()=>{st.step++;render();window.scrollTo(0,0);};
   const p=$("#prev");if(p)p.onclick=()=>{st.step--;render();};
 }
+/* ===== v6.8 상담 확인서: 계약석에서 고객과 최종 결정을 하는 종이 (계약서 아님, 고객에게 드림) ===== */
+function ckData(){const v=curVisit();const t=utype();const sel=[],think=[],no=[];
+  CATALOG.filter(c=>catOpts(c,t).length).forEach(c=>{const ids=Object.keys(st.sel).filter(id=>findOpt(id).cat.id===c.id);const it=v&&v.items[c.id];const memo=(it&&it.memo)||"";
+    if(ids.length)sel.push({c,lines:ids.map(id=>({o:findOpt(id).opt,m:st.sel[id]})),memo});
+    else if(it&&it.state==="think")think.push({c,pick:Object.keys(it.opts||{}),memo});
+    else no.push({c});});
+  return{v,t,sel,think,no};}
+function ckSheetHTML(){
+  const{v,t,sel,think}=ckData();const c=st.cust;
+  const L=[];sel.forEach(s=>s.lines.forEach(l=>L.push({c:s.c,...l,sc:schedule(l.o.price,s.c.id,l.m),amt:lineAmt(l.o.price,s.c.id,l.m)})));
+  const sp=L.filter(x=>x.m!=="lump"),lp=L.filter(x=>x.m==="lump");
+  const spDep=sp.reduce((a,x)=>a+x.sc[0].amt,0),lpTotal=lp.reduce((a,x)=>a+x.amt,0),total=L.reduce((a,x)=>a+x.amt,0);
+  const later=S.stages.slice(1).map((s,i)=>({name:s.name,ratio:s.ratio,amt:sp.reduce((a,x)=>a+x.sc[i+1].amt,0)}));
+  const rows=L.map(x=>`<tr><td><b>${esc(x.c.name)}</b></td><td>${esc(x.o.label)}</td><td class="c">${x.m==="lump"?"일시납":"분할"}</td><td class="r">${won(x.amt)}</td></tr>`).join("");
+  const thRows=think.map(x=>{const os=catOpts(x.c,t);const pk=x.pick.length?os.filter(o=>x.pick.includes(o.id)):[];
+    const txt=pk.length?pk.map(o=>`${esc(o.label)} <b>${won(o.price)}</b>`).join(" / "):(os.length>1?`${won(Math.min(...os.map(o=>o.price)))} ~ ${won(Math.max(...os.map(o=>o.price)))}`:`${esc(os[0].label)} <b>${won(os[0].price)}</b>`);
+    return`<tr><td><b>${esc(x.c.name)}</b></td><td>${txt}</td></tr>`;}).join("");
+  const css=`@page{size:A4;margin:12mm 13mm}*{box-sizing:border-box}body{margin:0;width:184mm;font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:13pt;color:#111;line-height:1.35}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #111;padding-bottom:8px;margin-bottom:14px}
+  .top h1{font-size:21pt;margin:0}.top .who{text-align:right;font-size:12pt;color:#333}.top .who b{display:block;font-size:19pt;color:#111}
+  h2{font-size:13pt;margin:18px 0 6px;color:#333}
+  table{width:100%;border-collapse:collapse}td,th{padding:8px 8px;border-bottom:1px solid #ccc;text-align:left}th{font-size:10.5pt;color:#555;font-weight:600;border-bottom:2px solid #111}
+  .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.c{text-align:center;white-space:nowrap}
+  tr.tot td{border-top:2px solid #111;border-bottom:0;font-weight:800;font-size:14pt}
+  .pay{display:grid;grid-template-columns:1fr auto 1fr auto 1.25fr;align-items:stretch;gap:0;margin-top:16px}
+  .bx{border:1.5px solid #111;border-radius:6px;padding:10px 12px;text-align:center}.bx span{display:block;font-size:10.5pt;color:#444}.bx b{display:block;font-size:17pt;margin-top:2px;font-variant-numeric:tabular-nums}
+  .op{display:flex;align-items:center;justify-content:center;font-size:20pt;font-weight:700;padding:0 8px}
+  .bx.today{background:#111;color:#fff;border-color:#111}.bx.today span{color:#ddd}.bx.today b{font-size:21pt}
+  .after{margin-top:6px;font-size:10pt;color:#555}.sch{border:1.5px solid #111}.sch th,.sch td{border:1px solid #999}.sch th{background:#f2f2f2;border-bottom:1px solid #999}.sch td{font-size:15pt;font-weight:700;font-variant-numeric:tabular-nums;padding:10px 6px}.sch td.tt{background:#f2f2f2}
+  .think{margin-top:26px;border:1.5px dashed #999;border-radius:8px;padding:4px 14px 8px}.think h2{margin:8px 0 2px;color:#8a5a00}.think td{border-bottom:1px dotted #ccc}.think td:first-child{white-space:nowrap;width:1%;padding-right:18px}
+  .foot{margin-top:18px;font-size:9.5pt;color:#666}`;
+  const body=`<div class="top"><div><h1>상담 확인서</h1><div style="font-size:11pt;color:#555">${esc(S.siteName)} · ${today()}</div></div><div class="who"><b>${unitKey()?esc(unitLabel(unitKey())):"-"}</b>${esc(c.name||"")} 님 · ${esc(t)} 타입</div></div>
+  <h2>선택 품목</h2>
+  ${L.length?`<table><tr><th>품목</th><th>선택</th><th class="c">납부</th><th class="r">금액 (원)</th></tr>${rows}<tr class="tot"><td colspan="3">합계</td><td class="r">${won(total)}</td></tr></table>`:'<p>선택한 품목이 없습니다.</p>'}
+  ${L.length?`<div class="pay"><div class="bx"><span>분할 품목 계약금 (${S.stages[0].ratio}%)</span><b>${won(spDep)}</b></div><div class="op">+</div><div class="bx"><span>일시납 품목 (${S.lumpDiscount}% 할인)</span><b>${won(lpTotal)}</b></div><div class="op">=</div><div class="bx today"><span>오늘 결제하실 금액</span><b>${won(spDep+lpTotal)}</b></div></div>
+  <h2>납부 일정</h2><table class="sch"><tr><th class="c">계약 시 (오늘)</th>${later.map(s=>`<th class="c">${esc(s.name)} (${s.ratio}%)</th>`).join("")}<th class="c">총 계약금액</th></tr><tr><td class="c">${won(spDep+lpTotal)}</td>${later.map(s=>`<td class="c">${won(s.amt)}</td>`).join("")}<td class="c tt">${won(total)}</td></tr></table><div class="after">중도금·잔금은 분할 납부 품목에만 해당합니다. 일시납 품목은 계약 시 전액 결제합니다.</div>`:""}
+  ${think.length?`<div class="think"><h2>고민 중인 품목</h2><table>${thRows}</table></div>`:""}
+  <div class="foot">상담 내용 확인용이며 계약서가 아닙니다. 표시 금액은 VAT 포함입니다.</div>`;
+  return`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>상담 확인서 ${unitKey()?esc(unitLabel(unitKey())):""}</title><style>${css}</style></head><body>${body}<script>(function(){var m=271/25.4*96,h=document.body.scrollHeight;if(h>m)document.body.style.zoom=Math.max(.78,(m-6)/h).toFixed(3);})();<\/script></body></html>`;}
+function printCheckSheet(){
+  const html=ckSheetHTML();const w=window.open("","_blank");
+  if(!w){toast("팝업이 막혀 있습니다. 브라우저에서 이 사이트의 팝업을 허용해 주세요.");return;}
+  w.document.open();w.document.write(html);w.document.close();
+  const v=curVisit();if(v){v.ckPrints=(v.ckPrints||[]).concat(Date.now());}
+  setTimeout(()=>{try{w.focus();w.print();}catch(e){}},400);
+  toast("상담 확인서 인쇄 창을 열었습니다. 출력해서 고객에게 드리세요.");render();}
 function refreshNav(){const n=$("#next");if(n)n.disabled=st.step>=maxStep();renderSteps();}
 function saveContract(){
   const v=curVisit();const consulted=new Set(v?Object.entries(v.items).filter(([c,it])=>it.state==="sel").map(([c])=>c):[]);
