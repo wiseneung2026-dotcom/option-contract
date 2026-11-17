@@ -346,7 +346,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v6.9 · 테스트 시트 연결</span>
+      <span class="sample">검토용 시안 v7.0 · 인천 단가표 반영</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -360,9 +360,9 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
 <script>
 /* ===== 현장 설정 (실제 버전: 구글시트 "현장설정") ===== */
 const S = {
-  siteName:"샘플 현장", siteCode:"SMP01",
-  stages:[{name:"계약금",ratio:20,due:"계약일"},{name:"중도금",ratio:70,due:"(확정 예정)"},{name:"잔금",ratio:10,due:"입주지정일"}],
-  lumpDiscount:3, roundUnit:1000, itemDeposit:{},
+  siteName:"인천 라온프라이빗 스카이브", siteCode:"RAON",
+  stages:[{name:"계약금",ratio:20,due:"계약일"},{name:"중도금",ratio:70,due:"2027-05-15"},{name:"잔금",ratio:10,due:"입주지정일"}],
+  lumpDiscount:3, roundUnit:100, itemDeposit:{},
   staff:[{name:"정안내",pin:"5555",role:"안내"},{name:"한상담",pin:"4444",role:"상담"},{name:"오상담",pin:"6666",role:"상담"},
          {name:"김민수",pin:"1111",role:"계약"},{name:"이지은",pin:"2222",role:"계약"},{name:"박준호",pin:"3333",role:"계약"},{name:"최종태",pin:"0000",role:"관리"}],
   desks:5, printMode:"A", popMin:10
@@ -375,54 +375,66 @@ const PRINT={
  B:{name:"일반용지 2부",print:"일반 용지에 2부 인쇄 (고객용 · 주관사 보관용)",sign:"2부에 각각 서명합니다",receipt:"고객용·보관용 2부",tag:"고객용 / 주관사 보관용"},
  C:{name:"1부 + 촬영본",print:"일반 용지에 1부 인쇄 (고객 교부용)",sign:"1부에 서명하고, 보관용은 촬영본으로 대신합니다",receipt:"고객용 계약서와 업체 보관(촬영 후)",tag:"고객 교부용 · 보관은 촬영본"}};
 const COMPANIES = {
-  WV:{name:"(주)와이즈비전",short:"와이즈비전",bizno:"138-81-98808",ceo:"최종태",tel:"070-8210-2314",bank:"기업 232-123301-01-017",holder:"(주)와이즈비전",warranty:"시공일로부터 1년"},
-  KW:{name:"(주)능구",short:"능구",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"1544-5033",bank:"(계좌 입력 예정)",holder:"(주)능구",warranty:"제품 보증 기준"},
-  FB:{name:"포비 붙박이장",short:"포비",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
-  WA:{name:"원앙",short:"원앙",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
-  MJ:{name:"미주조명",short:"미주조명",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
-  HS:{name:"한샘 안전방충망",short:"한샘",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
-  NC:{name:"나노코팅 시공사",short:"나노코팅",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
-  DW:{name:"더웰홈ENC",short:"더웰홈",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"}
+  SS:{name:"삼성전자 (삼성 계약석)",short:"삼성",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"무상 AS 1년"},
+  BO:{name:"보아스 인덕션",short:"보아스",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"무상 AS 1년"},
+  KW:{name:"쾌존 음식물처리기",short:"쾌존",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"무상 AS 1년"},
+  FR:{name:"냉장고장 (가구)",short:"냉장고장",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  HS:{name:"안전방범방충망",short:"방충망",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"망·프레임 10년 / 도장·잠금장치·기타 1년"},
+  WV:{name:"(주)와이즈비전",short:"와이즈비전",bizno:"138-81-98808",ceo:"최종태",tel:"070-8210-2314",bank:"기업 232-123301-01-017",holder:"(주)와이즈비전",warranty:"품질보증 10년(탈변색·성능저하) / 시공하자 1년"},
+  NC:{name:"나노코팅",short:"나노코팅",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
+  DW:{name:"에코히트 탄성코트",short:"탄성코트",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"곰팡이·박리 보증 A/S 5년"},
+  JN:{name:"줄눈",short:"줄눈",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"1년 무상 A/S"},
+  BT:{name:"베르타 자동개폐기",short:"베르타",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"무상 AS 2년"}
 };
-const ALL=["64A","64B","79A","79B"];
+const APT=["59A","59B","84"], OT=["오피스텔"], ALL=[...APT,...OT];
+/* 인천 라온프라이빗 스카이브 옵션단가표 (2026.11.13 · 행사 12/5~7) — 10개 품목, 체크리스트 순서 = 단가표 순서 */
 const CATALOG = [
+ {id:"SAM",name:"삼성가전",co:"SS",multi:true,opts:[
+  {id:"SA1",label:"BESPOKE 에어드레서 대용량 (아파트 전용)",types:APT,price:1980000},
+  {id:"SA2",label:"BESPOKE AI 콤보 세탁25kg/건조20kg",types:APT,price:3690000}]},
+ {id:"IND",name:"인덕션",co:"BO",multi:false,opts:[{id:"IN1",label:"3구 인덕션 · 보아스 VA-300PL",types:APT,price:897000}]},
+ {id:"FOOD",name:"음식물처리기",co:"KW",multi:false,opts:[{id:"FD1",label:"쾌존 QZ-022",types:ALL,price:1200000}]},
+ {id:"FRIDGE",name:"냉장고장 (가구)",co:"FR",multi:false,opts:[
+  {id:"FR1",label:"폭 1,800 · 냉장고 모델별 맞춤 제작",types:["59A","59B"],price:1680000,desc:"홈바·로봇청소기장 추가 별도 (각 25만 원)"},
+  {id:"FR2",label:"폭 2,400 · 냉장고 모델별 맞춤 제작",types:["84"],price:2100000,desc:"홈바·로봇청소기장 추가 별도 (각 25만 원)"}]},
+ {id:"NET",name:"안전방범방충망",co:"HS",multi:false,opts:[
+  {id:"N04O",label:"0.4 / 16mesh · 2창",types:OT,price:580000,desc:"실외기실 제외"},
+  {id:"N04A",label:"0.4 / 16mesh · 7창",types:["59A"],price:1900000},
+  {id:"N04B",label:"0.4 / 16mesh · 8창",types:["59B"],price:2110000},
+  {id:"N04C",label:"0.4 / 16mesh · 10창",types:["84"],price:2740000},
+  {id:"N06O",label:"0.6 / 16mesh · 2창",types:OT,price:640000,desc:"실외기실 제외"},
+  {id:"N06A",label:"0.6 / 16mesh · 7창",types:["59A"],price:2130000},
+  {id:"N06B",label:"0.6 / 16mesh · 8창",types:["59B"],price:2360000},
+  {id:"N06C",label:"0.6 / 16mesh · 10창",types:["84"],price:3015000}]},
  {id:"FILM",name:"단열필름",co:"WV",multi:false,opts:[
-  {id:"F1",label:"프리미엄형 (고급스퍼터링+나노세라믹)",types:["64A","64B"],price:1850000},
-  {id:"F2",label:"고급형 (나노세라믹)",types:["64A","64B"],price:1560000},
-  {id:"F3",label:"프리미엄형 (고급스퍼터링+나노세라믹)",types:["79A","79B"],price:1940000},
-  {id:"F4",label:"고급형 (나노세라믹)",types:["79A","79B"],price:1650000}]},
- {id:"CLO",name:"붙박이장",co:"FB",multi:true,opts:[
-  {id:"C1",label:"여닫이(웜) · 안방 10자",types:["64A"],price:1790000},
-  {id:"C2",label:"여닫이(웜) · 작은방 6자",types:["64A"],price:1590000},
-  {id:"C3",label:"여닫이(웜) · 안방 8자",types:["64B"],price:1450000},
-  {id:"C4",label:"여닫이(웜) · 작은방 4자",types:["64B","79A","79B"],price:1240000},
-  {id:"C5",label:"여닫이(웜) · 안방 12자",types:["79A","79B"],price:2090000},
-  {id:"C6",label:"슬라이딩(웜) · 안방 10자",types:["64A"],price:1990000},
-  {id:"C7",label:"슬라이딩(웜) · 안방 8자",types:["64B"],price:1640000},
-  {id:"C8",label:"슬라이딩(웜) · 안방 12자",types:["79A","79B"],price:2380000}]},
- {id:"SINK",name:"하이브리드 사각 싱크볼",co:"WA",multi:false,opts:[
-  {id:"S1",label:"원앙 하이브리드 사각 싱크볼 (전평형)",types:ALL,price:1250000,desc:"사각 싱크볼(SQ 780E) + 수전(VA-120MS) + 하이브리드 + 절수패달"}]},
- {id:"FOOD",name:"음식물처리기",co:"KW",multi:false,opts:[{id:"D1",label:"쾌존 QZ-022",types:ALL,price:1150000}]},
- {id:"LIGHT",name:"우물천정 감성조명",co:"MJ",multi:false,opts:[
-  {id:"L1",label:"프리미엄 (전평형)",types:ALL,price:1920000,desc:"우물조명 2색2열 + 라인조명 + 무선스위치 + 신발장하부"},
-  {id:"L2",label:"고급형 (전평형)",types:ALL,price:1160000,desc:"우물조명 2색2열 + 무선스위치 + 신발장하부"},
-  {id:"L3",label:"일반형 (전평형)",types:ALL,price:710000,desc:"우물조명 1색 + 무선스위치 + 신발장하부"}]},
- {id:"NET",name:"안전 방범 방충망",co:"HS",multi:false,opts:[
-  {id:"N1",label:"0.4mm",types:["64A"],price:2460000,desc:"실외기실·대피공간 제외"},
-  {id:"N2",label:"0.4mm",types:["64B"],price:2510000,desc:"실외기실·대피공간 제외"},
-  {id:"N3",label:"0.4mm",types:["79A","79B"],price:2830000,desc:"실외기실·대피공간 제외"},
-  {id:"N4",label:"0.6mm",types:["64A"],price:2630000,desc:"실외기실·대피공간 제외"},
-  {id:"N5",label:"0.6mm",types:["64B"],price:2680000,desc:"실외기실·대피공간 제외"},
-  {id:"N6",label:"0.6mm",types:["79A","79B"],price:3020000,desc:"실외기실·대피공간 제외"}]},
- {id:"NANO",name:"욕실/주방 나노코팅",co:"NC",multi:false,opts:[
-  {id:"K1",label:"욕실케어 기본 (전평형)",types:ALL,price:680000,desc:"변기2 + 세면대2 + 욕실거울2 + 샤워부스 유리 양면 + 화장대 거울 + 수전4 + 수건걸이2 + 휴지걸이2"},
-  {id:"K2",label:"욕실/주방케어 프리미엄 (전평형)",types:ALL,price:1320000,desc:"기본 + 주방상판·젠다이 UV하드코팅 + 싱크대 수전 + 주방 상판벽면 + 샤워부스 벽면 타일 3면"}]},
- {id:"COAT",name:"탄성코트 하이제로",co:"DW",multi:false,opts:[
-  {id:"T1",label:"3공간",types:["64A","79A","79B"],price:780000,desc:"주방발코니·안방발코니·대피실 (실외기실 제외)"},
-  {id:"T2",label:"3공간",types:["64B"],price:810000,desc:"주방발코니(실외기실 포함)·안방발코니·대피실"}]}
+  ...[["O",OT,460000],["A",["59A"],1510000],["B",["59B"],1580000],["C",["84"],1780000]].flatMap(([k,t,p])=>[
+    {id:"FPC"+k,label:"프리미엄형 · 클리어 (밝기 45)",types:t,price:p,desc:"스퍼터링 + 나노세라믹"},
+    {id:"FPS"+k,label:"프리미엄형 · 쉐이드 (밝기 30)",types:t,price:p,desc:"스퍼터링 + 나노세라믹"}]),
+  ...[["O",OT,390000],["A",["59A"],1280000],["B",["59B"],1340000],["C",["84"],1510000]].map(([k,t,p])=>
+    ({id:"FG"+k,label:"고급형 · 클리어 (밝기 45)",types:t,price:p,desc:"나노세라믹"}))]},
+ {id:"NANO",name:"나노코팅",co:"NC",multi:false,opts:[
+  {id:"NBO",label:"기본형",types:OT,price:499000,desc:"욕실 — 샤워부스1·거울수납장2·세면대1·양변기1·젠다이1 / 주방 — 상판·전체벽"},
+  {id:"NBA",label:"기본형",types:APT,price:799000,desc:"욕실 — 샤워부스1·욕조1·거울수납장2·세면대2·양변기2·젠다이2 / 주방 — 상판·전체벽"},
+  {id:"NPO",label:"프리미엄",types:OT,price:749000,desc:"기본형 + 욕실벽 전체 / 주방하부장 전체·주방후드·싱크볼 수전"},
+  {id:"NPA",label:"프리미엄",types:APT,price:1180000,desc:"기본형 + 욕실벽 전체 / 주방하부장 전체·주방후드·싱크볼 수전"}]},
+ {id:"COAT",name:"탄성코트 (에코히트)",co:"DW",multi:false,opts:[
+  {id:"CTO",label:"3공간",types:OT,price:715000,desc:"세탁실·보일러실·실외기실"},
+  {id:"CTA",label:"4공간",types:APT,price:770000,desc:"다용도실·발코니1·대피공간·실외기실"}]},
+ {id:"GROUT",name:"줄눈",co:"JN",multi:false,opts:[
+  ...[["A","A 패키지 · 폴리우레아",[440000,590000,650000],["3바닥 — 현관·욕실1·세탁실","5바닥 — 현관·욕실2·다용도실·세탁실","5바닥 — 현관·욕실2·다용도실·세탁실"]],
+      ["B","B 패키지 · 폴리우레아",[960000,1520000,1740000],["3바닥 + 욕실1 벽면 전체","5바닥 + 욕실2 벽면 전체","5바닥 + 욕실2 벽면 전체"]],
+      ["C","C 패키지 · 폴리 + 케라폭시",[880000,1250000,1440000],["3바닥 중 욕실1 바닥만 케라폭시","5바닥 중 욕실2 바닥만 케라폭시","5바닥 중 욕실2 바닥만 케라폭시"]],
+      ["D","D 패키지 · 폴리 + 케라폭시",[1400000,2150000,2440000],["3바닥 중 욕실1 바닥 케라폭시 + 욕실1 벽면(폴리)","5바닥 중 욕실2 바닥 케라폭시 + 욕실2 벽면(폴리)","5바닥 중 욕실2 바닥 케라폭시 + 욕실2 벽면(폴리)"]]
+     ].flatMap(([k,l,p,d])=>[{id:"G"+k+"O",label:l,types:OT,price:p[0],desc:d[0]},{id:"G"+k+"A",label:l,types:["59A","59B"],price:p[1],desc:d[1]},{id:"G"+k+"C",label:l,types:["84"],price:p[2],desc:d[2]}])]},
+ {id:"AUTO",name:"실외기실 자동개폐기",co:"BT",multi:false,opts:[
+  {id:"AT1",label:"베르타 · 손잡이 1대",types:ALL,price:550000},
+  {id:"AT2",label:"베르타 · 손잡이 2대",types:ALL,price:1050000}]}
 ];
+/* ⚠ 시연용 가정 세대표: 라인별 타입은 주관사 세대 리스트를 받으면 교체. 상담 화면에서 타입을 바꿀 수 있음 */
 const UNITS={};
-[101,102,103].forEach(d=>{for(let f=2;f<=15;f++){[1,2,3,4].forEach(h=>{UNITS[d+"-"+(f*100+h)]=["64A","64A","64B",d===103?"79B":"79A"][h-1];});}});
+const LINE_TYPE={101:["59A","59A","59B","84"],102:["59A","59A","59B","59B","84"],103:["59A","59A","84"]};
+Object.entries(LINE_TYPE).forEach(([d,ls])=>{for(let f=2;f<=41;f++)ls.forEach((t,i)=>{UNITS[d+"-"+(f*100+i+1)]=t;});});
+for(let f=2;f<=33;f++)for(let i=1;i<=6;i++)UNITS["201-"+(f*100+i)]="오피스텔";
 const ADDR_SAMPLE=[
  {road:"인천광역시 미추홀구 석정로 229",jibun:"인천 미추홀구 숭의동 1-1",zip:"22164"},
  {road:"인천광역시 미추홀구 숭의로 10",jibun:"인천 미추홀구 숭의동 109-5",zip:"22175"},
@@ -447,7 +459,7 @@ function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTim
 function findOpt(id){for(const c of CATALOG){const o=c.opts.find(o=>o.id===id);if(o)return{cat:c,opt:o};}}
 const catOpts=(c,type)=>c.opts.filter(o=>o.types.includes(type)&&o.price>0);
 function schedule(price,catId,method){
-  if(method==="lump"){const v=Math.floor(price*(100-S.lumpDiscount)/100/100)*100;return[{name:"일시납 ("+S.lumpDiscount+"% 할인)",due:"계약일",amt:v}];}
+  if(method==="lump"){const v=Math.round(price*(100-S.lumpDiscount)/100);return[{name:"일시납 ("+S.lumpDiscount+"% 할인)",due:"계약일",amt:v}];}
   const r=S.stages.map(s=>s.ratio);
   if(S.itemDeposit[catId]!=null){const diff=r[0]-S.itemDeposit[catId];r[0]=S.itemDeposit[catId];r[r.length-1]+=diff;}
   let acc=0;return S.stages.map((s,i)=>{let a;if(i===S.stages.length-1)a=price-acc;else{a=Math.floor(price*r[i]/100/S.roundUnit)*S.roundUnit;acc+=a;}return{name:s.name+" ("+r[i]+"%)",due:s.due,amt:a};});
@@ -460,8 +472,8 @@ function copyText(el,msg){const t=el.textContent;const fb=()=>{selectText(el);to
 /* ===== 샘플 데이터: 관리대장(계약) + 방명록(방문) ===== */
 const LEDGER=[], VISITS=[], ORIG={}, OWNER={}, HIST=[], OPHOTO={};
 function seedSample(){let s=7;const iso=d=>new Date(Date.parse(today())+d*864e5).toISOString().slice(0,10);const D1=iso(-16),D2=iso(-12);const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};
-  const keys=Object.keys(UNITS).filter(k=>!["101-1201","102-702","103-1504","101-802"].includes(k));const fam="김이박최정강조윤장임";const pickU=()=>keys.splice(Math.floor(rnd()*keys.length),1)[0];
-  const want={FILM:.5,CLO:.3,SINK:.12,FOOD:.22,LIGHT:.2,NET:.28,NANO:.18,COAT:.25};
+  const keys=Object.keys(UNITS).filter(k=>!["101-1201","102-702","103-1503","101-802"].includes(k));const fam="김이박최정강조윤장임";const pickU=()=>keys.splice(Math.floor(rnd()*keys.length),1)[0];
+  const want={SAM:.08,IND:.15,FOOD:.2,FRIDGE:.12,NET:.28,FILM:.45,NANO:.2,COAT:.25,GROUT:.3,AUTO:.15};
   const base=new Date(today()+"T10:00:00").getTime();
   for(let n=0;n<34;n++){const unit=pickU();const type=UNITS[unit];const date=n<20?D1:D2;const name=fam[Math.floor(rnd()*fam.length)]+"○○";
     const staff=["김민수","이지은","박준호"][Math.floor(rnd()*3)],cons=["한상담","오상담"][Math.floor(rnd()*2)];const via=rnd()<.6?"qr":rnd()<.5?"tablet":"staff";
@@ -479,12 +491,12 @@ function seedSample(){let s=7;const iso=d=>new Date(Date.parse(today())+d*864e5)
   const g=LEDGER.find(r=>r.status==="계약"&&r.cat==="FILM"&&r.method==="분할");if(g){HIST.push({id:"H1",at:Date.now()-26*36e5,by:"최종태",unit:g.unit,kind:"변경",text:"단열필름: 납부방식 일시납 → 분할 (고객 요청)",judge:"",cos:["WV"],msg:"[변경 통보] "+lab(g.unit)+" "+g.name+"\n단열필름: 납부방식 일시납 → 분할 (고객 요청)\n처리: 최종태",notified:false});}
   /* 지금 진행 중인 샘플: 대기 2, 상담 중 1, 방문 2 */
   const now=Date.now();
-  VISITS.push({id:"Q1",unit:"101-1201",type:"64A",name:"홍길동",phone:"010-1234-5678",birth:"1980-03-12",addr:"인천광역시 미추홀구 숭의로 10",zip:"22175",addrDetail:"5층",via:"qr",at:now-38*60000,status:"계약대기",queueAt:now-9*60000,consultant:"한상담",date:today(),
-    items:{FILM:{state:"sel",opts:{F1:"split"}},CLO:{state:"think",opts:{C1:"split"},memo:"배우자와 상의 후 결정. 슬라이딩 가격도 궁금해함"},NET:{state:"sel",opts:{N4:"lump"}},COAT:{state:"think",opts:{},memo:"가격 부담"}}});
-  VISITS.push({id:"Q2",unit:"102-702",type:"64A",name:"윤서연",phone:"010-2222-3456",addr:"서울특별시 송파구 올림픽로 300",zip:"05551",via:"staff",staffBy:"정안내",paperNo:"17",at:now-30*60000,status:"계약대기",queueAt:now-4*60000,consultant:"오상담",date:today(),
-    items:{FILM:{state:"sel",opts:{F2:"split"}},LIGHT:{state:"sel",opts:{L2:"split"}},FOOD:{state:"think",opts:{},memo:"싱크대 하부 공간 확인 필요"}}});
-  VISITS.push({id:"Q3",unit:"103-1504",type:"79B",name:"장민호",phone:"010-7777-1212",addr:"",via:"tablet",at:now-15*60000,status:"상담중",consultant:"한상담",date:today(),items:{FILM:{state:"sel",opts:{F3:"split"}}}});
-  VISITS.push({id:"Q4",unit:"101-802",type:"64A",name:"서지우",phone:"010-3030-4040",addr:"",via:"qr",at:now-6*60000,status:"방문",date:today(),items:{}});
+  VISITS.push({id:"Q1",unit:"101-1201",type:"59A",name:"홍길동",phone:"010-1234-5678",birth:"1980-03-12",addr:"인천광역시 미추홀구 숭의로 10",zip:"22175",addrDetail:"5층",via:"qr",at:now-38*60000,status:"계약대기",queueAt:now-9*60000,consultant:"한상담",date:today(),
+    items:{FILM:{state:"sel",opts:{FPCA:"split"}},FRIDGE:{state:"think",opts:{FR1:"split"},memo:"배우자와 상의 후 결정. 냉장고 모델 확인 필요"},NET:{state:"sel",opts:{N06A:"lump"}},COAT:{state:"think",opts:{},memo:"가격 부담"}}});
+  VISITS.push({id:"Q2",unit:"102-702",type:"59A",name:"윤서연",phone:"010-2222-3456",addr:"서울특별시 송파구 올림픽로 300",zip:"05551",via:"staff",staffBy:"정안내",paperNo:"17",at:now-30*60000,status:"계약대기",queueAt:now-4*60000,consultant:"오상담",date:today(),
+    items:{FILM:{state:"sel",opts:{FGA:"split"}},GROUT:{state:"sel",opts:{GBA:"split"}},FOOD:{state:"think",opts:{},memo:"싱크대 하부 공간 확인 필요"}}});
+  VISITS.push({id:"Q3",unit:"103-1503",type:"84",name:"장민호",phone:"010-7777-1212",addr:"",via:"tablet",at:now-15*60000,status:"상담중",consultant:"한상담",date:today(),items:{FILM:{state:"sel",opts:{FPCC:"split"}}}});
+  VISITS.push({id:"Q4",unit:"101-802",type:"59A",name:"서지우",phone:"010-3030-4040",addr:"",via:"qr",at:now-6*60000,status:"방문",date:today(),items:{}});
   VISITS.push({id:"Q5",unit:"",type:"",name:"박○○ (동·호 모름)",phone:"010-5656-7878",addr:"",via:"staff",staffBy:"정안내",paperNo:"18",at:now-2*60000,status:"방문",date:today(),items:{}});
 }
 let queueSeq=2;
@@ -494,7 +506,7 @@ const blank=()=>({step:0,dong:"",ho:"",sel:{},cust:{name:"",phone:"",birth:"",ad
 const st={view:"guest",user:null,role:null,desk:1,pin:"",pick:"",statusDay:"all",cv:null,guestMode:false,gdone:false,
   g:{unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:"self",paperNo:""},...blank()};
 const unitKey=()=>st.dong&&st.ho?st.dong+"-"+st.ho:"";
-const utype=()=>UNITS[unitKey()]||"";
+const utype=()=>{const v=VISITS.find(x=>x.id===st.visitId);return (v&&v.unit===unitKey()&&v.type)||UNITS[unitKey()]||"";};
 const selected=()=>Object.keys(st.sel).map(id=>({...findOpt(id),method:st.sel[id]}));
 const curVisit=()=>VISITS.find(v=>v.id===st.visitId);
 const depositorName=()=>`${st.dong}${st.ho}${st.cust.name.trim()}`;
@@ -741,7 +753,8 @@ function consultSheet(v){
        ${on&&it.state==="sel"?`<span class="pay"><button type="button" class="seg" data-cm="${c.id}:${o.id}:split" aria-pressed="${on==="split"}">분할</button><button type="button" class="seg" data-cm="${c.id}:${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join(""):""}
      ${it.state!=="no"?`<input class="memo" data-memo="${c.id}" value="${esc(it.memo||"")}" placeholder="${it.state==="think"?"계약 실장에게 전할 메모 (예: 배우자와 상의 후 결정)":"메모 (선택 · 예: 색상 확인 필요)"}">`:""}</div>`;}).join("");
   return`<div class="row" style="justify-content:space-between;align-items:baseline"><h2>${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">선택 합계 ${won(total)}원</span></div>
-   <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입에 없는 항목은 보이지 않습니다.</p>${html}
+   <div class="row" style="gap:6px;align-items:center;margin:4px 0 8px"><small style="color:var(--muted)">타입 확인</small>${ALL.map(t=>`<button type="button" class="seg" data-ty="${t}" aria-pressed="${v.type===t}" style="padding:6px 12px">${t}</button>`).join("")}</div>
+   <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입에 없는 항목은 보이지 않습니다. 타입이 다르면 위에서 바꾸세요.</p>${html}
    <div class="nav"><button class="btn" id="cv-done">${v.status==="계약대기"?"수정 저장 (대기 유지)":"상담 완료 · 계약석 대기 등록"}</button></div>
    <p class="note">고민 중 ${thinkN}개와 메모는 계약석 화면 맨 위와 상담 확인서에 함께 표시됩니다.</p>`;
 }
@@ -755,6 +768,7 @@ function bindConsult(){
   const v=VISITS.find(x=>x.id===st.cv);if(!v)return;
   const cu=$("#cv-unit");if(cu)cu.oninput=()=>{const h=parseUnit(cu.value);$("#cv-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
   const cs=$("#cv-setunit");if(cs)cs.onclick=()=>{const h=parseUnit(cu.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}v.unit=h;v.type=UNITS[h];render();};
+  $$("[data-ty]").forEach(b=>b.onclick=()=>{const t=b.dataset.ty;if(t===v.type)return;v.type=t;Object.values(v.items).forEach(it=>{Object.keys(it.opts||{}).forEach(o=>{if(!findOpt(o).opt.types.includes(t))delete it.opts[o];});});toast(`${t} 타입으로 바꿨습니다. 맞지 않는 옵션은 지웠습니다.`);render();});
   $$("[data-st]").forEach(b=>b.onclick=()=>{const[c,s]=b.dataset.st.split(":");const it=v.items[c]||{opts:{}};it.state=s;if(s==="no")it.opts={};v.items[c]=it;render();});
   $$("[data-co]").forEach(cb=>cb.onchange=()=>{const[c,o]=cb.dataset.co.split(":");const cat=CATALOG.find(x=>x.id===c);const it=v.items[c];
     if(cb.checked){if(!cat.multi)it.opts={};it.opts[o]="split";}else delete it.opts[o];render();});
