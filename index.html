@@ -93,6 +93,10 @@ button,a,input,select,label,textarea{touch-action:manipulation}
 .opt .lbl{font-weight:500}
 .opt .desc{grid-column:2/4;font-size:12px;color:var(--muted)}
 .opt .price{text-align:right;font-weight:500}
+/* v7.1.1: 좁은 화면·큰 글씨에서 옵션명과 금액이 겹치지 않게 */
+.opt .lbl{min-width:0;overflow-wrap:anywhere;word-break:keep-all}
+@media (max-width:520px){.opt .price{grid-column:2/4;text-align:left}}
+
 .pay{grid-column:2/4;display:flex;gap:6px;flex-wrap:wrap}
 .seg{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 10px;font-size:13px}
 .seg[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -206,6 +210,14 @@ button,a,input,select,label,textarea{touch-action:manipulation}
 .paper .ph{color:#999}
 .paper .hand{height:40px;background:#fffdf3}
 .paper .hand-note{font-size:10.5px;color:#555}
+.paper .cf{background:#FFD400 !important;outline:2px solid #111;outline-offset:-2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.paper .sign span.cf{padding:14px 8px 4px;min-width:170px}
+.paper .cf-in{padding:1px 6px;border-radius:3px}
+.paper .stamp-slot{position:relative}
+.paper .stamp{position:absolute;right:-6px;top:50%;transform:translateY(-50%);height:58px;opacity:.9;mix-blend-mode:multiply;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cat.think-cat{border:2px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-top:12px}
+.cat-memo{font-size:13px;color:#7a4b00;background:#fff;border:1px dashed var(--accent);border-radius:6px;padding:6px 10px;margin:-2px 0 6px}
+.opt.think-opt{border:1.5px dashed var(--accent)}
 .copy-tag{display:inline-block;border:1px solid var(--paper-ink);padding:1px 8px;font-size:11px;float:left}
 .note{margin-top:10px;font-size:13px;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.opt,.paycard,.step,.flow-step{transition:background-color .15s,border-color .15s}}
@@ -238,6 +250,9 @@ button,a,input,select,label,textarea{touch-action:manipulation}
 .ck-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
 .ck-head h3{font-size:16px;margin-right:auto}
 .tri{display:flex;gap:4px}
+.ck-opt .lp{display:block;font-size:11px;font-weight:400;color:var(--muted)}
+.ck-opt.ref{background:#fafbfd;border-style:dashed}
+.ck-opt.ref .lbl,.ck-opt.ref .price{color:#55606f}
 .tri .seg{padding:6px 12px;font-size:14px}
 .tri .seg.t[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
 .memo{margin-top:8px;width:100%;border:1px solid var(--accent);border-radius:8px;padding:9px 10px;font-size:15px;background:#fff}
@@ -348,7 +363,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.1 · 입장번호</span>
+      <span class="sample">검토용 시안 v7.2 · 입장번호</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -524,6 +539,7 @@ function byCompany(){const g={};selected().forEach(x=>{(g[x.cat.co]=g[x.cat.co]|
 const nowAmt=list=>list.reduce((t,x)=>t+schedule(x.opt.price,x.cat.id,x.method)[0].amt,0);
 const viaLabel=v=>v.via==="qr"?"고객 QR":v.via==="tablet"?"방명록 태블릿":`직원 입력${v.staffBy?" · "+v.staffBy:""}${v.paperNo?" · 종이 "+v.paperNo+"번":""}`;
 const statusChip=s=>({방문:"gray",상담중:"",계약대기:"think",계약:"ok",미결정:"warn"}[s]);
+const whoStatus=x=>x.status==="상담중"&&x.consultant?"상담 중 · "+esc(x.consultant):x.status==="계약대기"&&x.calledDesk?"계약석 "+x.calledDesk+"번 · "+esc(x.calledBy||""):statusName(x.status);
 const statusName=s=>({방문:"방문",상담중:"상담 중",계약대기:"계약 대기",계약:"계약",미결정:"미결정"}[s]);
 
 /* ===== 구글시트 동기화 =====
@@ -531,6 +547,8 @@ const statusName=s=>({방문:"방문",상담중:"상담 중",계약대기:"계�
  * 고객 QR 화면은 보내기만 하고 다른 사람 정보는 받아오지 않는다. */
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const SYNC={ack:{},pullP:null,hash:{},pending:{},last:0,resetAt:0,ok:null,at:0,busy:false,err:"",dirtyRender:false};
+const STAMPS={}; /* 업체 코드: "data:image/png;base64,..." — 받은 도장 이미지를 여기에 넣으면 모든 기기에 적용 */
+const stampOf=co=>{try{return localStorage.getItem("oc_stamp_"+co)||STAMPS[co]||"";}catch(e){return STAMPS[co]||"";}};
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 let API=lsGet("oc_api")||DEFAULT_API;
@@ -669,7 +687,7 @@ function viewGuestDesk(){
    <p>휴대폰 카메라로 QR을 찍으면 방명록이 열립니다.<br>한 번 등록하면 상담과 계약에 그대로 쓰여 다시 적지 않으셔도 됩니다.</p><p class="qp-sub">QR이 어려우시면 안내 직원에게 말씀해 주세요.</p></div>
   ${guestForm(true)}</section>
   <section class="panel"><h2>오늘 방문 ${list.length}세대</h2><p class="hint">최근 등록 순. 상태는 상담·계약 단계에 따라 자동으로 바뀝니다.</p>
-  <div class="vlist">${(()=>{const wl=waitList().map(x=>x.id);return list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow">${noTag(v)}<span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"대기 "+n+"번째":statusName(v.status)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>';})()}</div></section></div>`;
+  <div class="vlist">${(()=>{const wl=waitList().map(x=>x.id);return list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow">${noTag(v)}<span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"대기 "+n+"번째":whoStatus(v)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>';})()}</div></section></div>`;
 }
 /* 상담 대기 순번: 오늘 방문했고 아직 상담을 시작하지 않은 세대, 먼저 온 순서 */
 /* 검토용 시안: 오늘 방문이 하나도 없으면 가장 최근 방문일을 '오늘'처럼 보여 준다 (샘플을 넣은 다음 날에도 화면이 비지 않게). 실제 버전에서는 끔 */
@@ -767,7 +785,7 @@ function viewConsult(){
   const wait=waitList();
   const others=td.filter(x=>x.status==="상담중"&&x.consultant!==st.user).sort((a,b)=>a.at-b.at);
   const v=VISITS.find(x=>x.id===st.cv);
-  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${noTag(x)}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?n+"번째 · "+waitTxt(x):x.status==="계약대기"&&x.calledDesk?"계약석 "+x.calledDesk+"번 진행":statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장${!n&&x.consultant&&x.consultant!==st.user?" · "+esc(x.consultant)+" 실장":""}</small></button>`;
+  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${noTag(x)}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?n+"번째 · "+waitTxt(x):whoStatus(x)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장</small></button>`;
   const waitC=td.filter(x=>x.status==="계약대기"&&!x.calledDesk).sort((a,b)=>a.queueAt-b.queueAt);
   return`<div class="two"><section class="panel"><span class="who staff">상담 실장</span><h2>상담할 세대</h2>
    <div class="field" style="margin:6px 0 10px"><input id="cv-q" inputmode="numeric" placeholder="번호 · 동호수 · 휴대폰 뒤 4자리로 찾기" value="${esc(st.cq||"")}" autocomplete="off"><div id="cv-qres">${searchRes(st.cq)}</div></div>
@@ -783,7 +801,7 @@ function searchRes(q){q=(q||"").replace(/\D/g,"");if(!q)return"";const td=visitD
   let r=VISITS.filter(v=>(q.length<=3&&String(v.no)===q&&v.date===td)||(q.length===4&&((v.phone||"").replace(/\D/g,"").endsWith(q)||(v.unit&&v.unit.endsWith("-"+String(+q)))))||(q.length>=6&&v.unit===parseUnit(q)));
   r=r.sort((a,b)=>(b.date>a.date?1:b.date<a.date?-1:0)||(b.at-a.at)).slice(0,8);
   if(!r.length)return'<p class="note" style="margin:4px 0">찾는 고객이 없습니다.</p>';
-  return`<div class="vlist" style="margin-top:6px">${r.map(x=>`<button class="vrow" data-cv="${x.id}">${noTag(x)}<b>${esc(x.name)}</b><span class="chip ${statusChip(x.status)}">${x.date!==td?x.date.slice(5)+" 방문":statusName(x.status)}</span><small>${unitLabel(x.unit)}${x.type?" · "+x.type:""}${x.consultant?" · 상담 "+esc(x.consultant):""}</small></button>`).join("")}</div>`;}
+  return`<div class="vlist" style="margin-top:6px">${r.map(x=>`<button class="vrow" data-cv="${x.id}">${noTag(x)}<b>${esc(x.name)}</b><span class="chip ${statusChip(x.status)}">${x.date!==td?x.date.slice(5)+" 방문":whoStatus(x)}</span><small>${unitLabel(x.unit)}${x.type?" · "+x.type:""}${x.consultant?" · 상담 "+esc(x.consultant):""}</small></button>`).join("")}</div>`;}
 function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;
   return`<h2>${noTag(v)}${esc(v.name)} <span class="chip think">${v.status==="미결정"?"결정 보류 · 다시 상담 가능":"대기 "+n+"번째 · "+waitTxt(v)}</span></h2>
    <div class="kv" style="margin:10px 0"><span>동·호수</span><b>${v.unit?unitLabel(v.unit)+" · "+v.type:"미확정 (상담 중 확인)"}</b><span>휴대폰</span><b class="num">${esc(v.phone||"-")}</b><span>입장</span><b>${hhmm(v.at)} · ${esc(viaLabel(v))}</b></div>
@@ -793,25 +811,25 @@ function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;
 function consultSheet(v){
   if(v.status==="방문"||v.status==="미결정")return startCard(v);
   if(v.status==="상담중"&&v.consultant!==st.user)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">${esc(v.consultant||"다른")} 실장이 상담 중입니다.</p><div class="nav"><button class="btn" id="cv-take">이어서 상담하기</button></div><p class="note">누르면 담당이 ${esc(st.user)}(으)로 바뀌고, 지금까지 체크한 내용은 그대로 이어집니다.</p>`;
-  if(v.status==="계약대기"&&v.calledDesk)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약석 ${v.calledDesk}번에서 진행 중입니다. 바꿀 내용은 계약석에 말씀해 주세요.</p>`;
+  if(v.status==="계약대기"&&v.calledDesk)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약석 ${v.calledDesk}번(${esc(v.calledBy||"")} 실장)에서 진행 중입니다. 바꿀 내용은 계약석에 말씀해 주세요.</p>`;
   if(v.status==="계약")return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약이 끝난 세대입니다. 추가 계약은 계약석에서 동·호수로 진행합니다.</p>`;
   if(!v.unit&&!v.type)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">동·호수가 아직 없습니다. 알면 입력하고, 모르면 타입만 골라 상담을 시작하세요. 동·호수는 계약석에서 확정합니다.</p><div class="field"><label for="cv-unit">동·호수 (숫자만)</label><input id="cv-unit" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="cv-hit"></div></div><div class="nav"><button class="btn" id="cv-setunit">확정</button></div><div class="row" style="gap:6px;align-items:center;margin-top:12px"><small style="color:var(--muted)">타입만 고르기</small>${ALL.map(t=>`<button type="button" class="seg" data-ty="${t}" style="padding:8px 14px">${t}</button>`).join("")}</div>`;
-  const items=v.items;let total=0,thinkN=0;
+  const items=v.items;let total=0,thinkN=0,todayN=0;
   const cats=CATALOG.filter(c=>catOpts(c,v.type).length);
   const html=cats.map(c=>{const it=items[c.id]||{state:"no",opts:{}};const opts=catOpts(c,v.type);
-    if(it.state==="sel")Object.entries(it.opts).forEach(([id,m])=>{const o=findOpt(id).opt;total+=lineAmt(o.price,c.id,m);});
+    if(it.state==="sel"&&!isSS(c.id))Object.entries(it.opts).forEach(([id,m])=>{const o=findOpt(id).opt;total+=lineAmt(o.price,c.id,m);todayN+=schedule(o.price,c.id,m)[0].amt;});
     if(it.state==="think")thinkN++;
     return`<div class="ck-cat ${it.state==="sel"?"sel":it.state==="think"?"think":""}"><div class="ck-head"><h3>${esc(c.name)} <small style="font-weight:400;color:var(--muted);font-size:12px">${esc(COMPANIES[c.co].short)}</small></h3>
      <div class="tri" role="group" aria-label="${esc(c.name)} 상태"><button class="seg" data-st="${c.id}:sel" aria-pressed="${it.state==="sel"}">선택</button><button class="seg t" data-st="${c.id}:think" aria-pressed="${it.state==="think"}">고민 중</button><button class="seg" data-st="${c.id}:no" aria-pressed="${it.state==="no"}">안 함</button></div></div>
-     ${it.state!=="no"?opts.map(o=>{const on=it.opts[o.id];return`<label class="opt ${on?"sel":""}" style="background:#fff"><input type="checkbox" data-co="${c.id}:${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
-       ${on&&it.state==="sel"?`<span class="pay"><button type="button" class="seg" data-cm="${c.id}:${o.id}:split" aria-pressed="${on==="split"}">분할</button><button type="button" class="seg" data-cm="${c.id}:${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join(""):""}
+     ${opts.map(o=>{const on=it.opts[o.id];return`<label class="opt ck-opt ${on?"sel":""} ${it.state==="no"?"ref":""}"><input type="checkbox" data-co="${c.id}:${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}<small class="lp">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</small></span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
+       ${on&&it.state==="sel"?`<span class="pay"><button type="button" class="seg" data-cm="${c.id}:${o.id}:split" aria-pressed="${on==="split"}">분할</button><button type="button" class="seg" data-cm="${c.id}:${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join("")}
      ${it.state!=="no"?`<input class="memo" data-memo="${c.id}" value="${esc(it.memo||"")}" placeholder="${it.state==="think"?"계약 실장에게 전할 메모 (예: 배우자와 상의 후 결정)":"메모 (선택 · 예: 색상 확인 필요)"}">`:""}</div>`;}).join("");
   const prev=VISITS.filter(x=>x.id!==v.id&&x.date<v.date&&((v.unit&&x.unit===v.unit)||(v.phone&&x.phone===v.phone))&&Object.keys(x.items||{}).length).sort((a,b)=>b.at-a.at)[0];
   return`${prev?`<div class="alert" style="margin-bottom:8px">재방문 고객 · ${prev.date.slice(5)} 상담(${esc(prev.consultant||"-")}) 기록이 있습니다. ${Object.keys(v.items).length?"":`<button class="seg" id="cv-prev" data-prev="${prev.id}" style="padding:6px 10px">이전 체크 불러오기</button>`}</div>`:""}
    ${v.unit?"":`<div class="alert" style="margin-bottom:8px">동·호수 미확정 — 계약석에서 계약서 출력 전에 확인합니다.</div>`}
-   <div class="row" style="justify-content:space-between;align-items:baseline"><h2>${noTag(v)}${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">선택 합계 ${won(total)}원</span></div>
+   <div class="row" style="justify-content:space-between;align-items:baseline"><h2>${noTag(v)}${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span style="text-align:right"><span class="num" style="display:block;font-weight:800;font-size:20px;color:var(--navy)">오늘 결제 ${won(todayN)}원</span><small class="num" style="color:var(--muted)">계약 총액 ${won(total)}원${hasSS(v)?" · 삼성 별도":""}</small></span></div>
    <div class="row" style="gap:6px;align-items:center;margin:4px 0 8px"><small style="color:var(--muted)">타입 확인</small>${ALL.map(t=>`<button type="button" class="seg" data-ty="${t}" aria-pressed="${v.type===t}" style="padding:6px 12px">${t}</button>`).join("")}</div>
-   <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입에 없는 항목은 보이지 않습니다. 타입이 다르면 위에서 바꾸세요.</p>${html}
+   <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입의 제품·시공 내용·금액이 모두 보이니 보면서 설명하고, 옵션을 누르면 바로 '선택'이 됩니다. 이 타입에 없는 항목은 보이지 않습니다. 타입이 다르면 위에서 바꾸세요.</p>${html}
    <div class="nav"><button class="btn" id="cv-done">${v.status==="계약대기"?"수정 저장 (대기 유지)":"상담 완료 · 계약석 대기 등록"}</button>${v.status==="상담중"?'<button class="btn ghost" id="cv-hold">오늘은 결정 안 함</button>':""}</div>
    <p class="note">고민 중 ${thinkN}개와 메모는 계약석 화면 맨 위와 상담 확인서에 함께 표시됩니다.</p>`;
 }
@@ -831,8 +849,8 @@ function bindConsult(){
   const cs=$("#cv-setunit");if(cs)cs.onclick=()=>{const h=parseUnit(cu.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}v.unit=h;v.type=UNITS[h];render();};
   $$("[data-ty]").forEach(b=>b.onclick=()=>{const t=b.dataset.ty;if(t===v.type)return;v.type=t;Object.values(v.items).forEach(it=>{Object.keys(it.opts||{}).forEach(o=>{if(!findOpt(o).opt.types.includes(t))delete it.opts[o];});});toast(`${t} 타입으로 바꿨습니다. 맞지 않는 옵션은 지웠습니다.`);render();});
   $$("[data-st]").forEach(b=>b.onclick=()=>{const[c,s]=b.dataset.st.split(":");const it=v.items[c]||{opts:{}};it.state=s;if(s==="no")it.opts={};v.items[c]=it;render();});
-  $$("[data-co]").forEach(cb=>cb.onchange=()=>{const[c,o]=cb.dataset.co.split(":");const cat=CATALOG.find(x=>x.id===c);const it=v.items[c];
-    if(cb.checked){if(!cat.multi)it.opts={};it.opts[o]="split";}else delete it.opts[o];render();});
+  $$("[data-co]").forEach(cb=>cb.onchange=()=>{const[c,o]=cb.dataset.co.split(":");const cat=CATALOG.find(x=>x.id===c);const it=v.items[c]||(v.items[c]={state:"no",opts:{}});
+    if(cb.checked){if(it.state==="no")it.state="sel";if(!cat.multi)it.opts={};it.opts[o]="split";}else delete it.opts[o];render();});
   $$("[data-cm]").forEach(b=>b.onclick=e=>{e.preventDefault();const[c,o,m]=b.dataset.cm.split(":");v.items[c].opts[o]=m;render();});
   /* v6.8: 메모는 다른 기기 기록이 들어와도 최신 기록에 쓰고, 입력을 멈추면 바로 시트로 보낸다 */
   $$("[data-memo]").forEach(i=>{const save=()=>{const vv=VISITS.find(x=>x.id===st.cv)||v;const it=vv.items[i.dataset.memo];if(!it)return;it.memo=i.value;afterRender();};i.oninput=()=>{clearTimeout(i._t);i._t=setTimeout(save,500);};i.onchange=save;i.onblur=save;});
@@ -893,8 +911,8 @@ function sidePanel(){
   }
   return`<aside class="panel side"><h2>${noTag(v)}${unitKey()?esc(unitLabel(unitKey())):(v?"동·호 미확정":"세대 미선택")}</h2><div class="hint">${utype()?utype()+" 타입":"대기열에서 호출하세요"}${v?" · 상담 "+esc(v.consultant||"-"):""}</div>
    ${lines||'<div class="empty">선택한 품목이 없습니다.</div>'}
-   <div class="total"><span>계약 총액</span><span class="v num">${won(total)}</span></div>
-   <div class="total" style="margin-top:4px"><span style="font-size:13px;color:var(--muted)">오늘 결제(계약금·일시납)</span><span class="num" style="font-weight:700">${won(todayAmt)}</span></div>
+   <div class="total"><span>오늘 결제<small style="display:block;font-size:12px;font-weight:400;color:var(--muted)">분할 품목은 ${S.stages[0].ratio}%, 일시납 품목은 전액(${S.lumpDiscount}% 할인)</small></span><span class="v num">${won(todayAmt)}</span></div>
+   <div class="total" style="margin-top:4px"><span style="font-size:13px;color:var(--muted)">계약 총액</span><span class="num" style="font-size:14px;color:var(--muted)">${won(total)}</span></div>
    ${up}
    <div class="nav">${st.step>0?'<button class="btn ghost" id="prev">이전</button>':""}${st.step>0&&st.step<4?`<button class="btn" id="next" ${st.step>=maxStep()?"disabled":""}>다음</button>`:""}</div>
    ${st.step>0?'<button class="btn" id="custView" style="margin-top:10px;width:100%;background:var(--accent)">고객 보기 화면으로 (고객에게 보여주기)</button>':""}
@@ -912,9 +930,10 @@ function viewItems(){
   <p class="hint">${v?"상담에서 선택한 품목이 체크되어 있습니다. 고민 중 품목을 마지막으로 권하고, 바뀐 것만 고치세요.":t+" 타입 선택지만 보입니다."}</p>
   ${prev.length?`<div class="alert" style="margin-bottom:12px">이미 계약한 품목: ${prev.map(p=>esc(p.item)).join(", ")}. 추가 계약으로 진행됩니다.${prev[0].name&&v&&prev[0].name[0]!==v.name[0]?" · 기존 계약자와 이름이 다릅니다. 명의를 확인하세요.":""}</div>`:""}
   ${v&&hasSS(v)?`<div class="badge-src" style="margin-bottom:10px">삼성: ${esc(Object.keys(v.items.SAM.opts||{}).map(id=>findOpt(id).opt.label).join(", ")||"고민 중")} — <b>삼성 계약석에서 별도 계약</b> (여기 계약서·결제에는 들어가지 않습니다)</div>`:""}
-  ${CATALOG.map(c=>{if(isSS(c.id))return"";const opts=catOpts(c,t);if(!opts.length)return"";const think=v&&v.items[c.id]&&v.items[c.id].state==="think";
-   return`<div class="cat"><div class="cat-h"><h3>${esc(c.name)}</h3><span class="co">${esc(COMPANIES[c.co].name)}${c.multi?" · 복수 선택 가능":""}</span>${think?'<span class="chip think">고민 중</span>':""}</div>
-   ${opts.map(o=>{const on=st.sel[o.id];return`<label class="opt ${on?"sel":""}"><input type="checkbox" data-opt="${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
+  ${CATALOG.map(c=>{if(isSS(c.id))return"";const opts=catOpts(c,t);if(!opts.length)return"";const vit=v&&v.items[c.id];const think=vit&&vit.state==="think";const thinkOn=think&&!opts.some(o=>st.sel[o.id]);const memo=vit&&vit.state!=="no"&&vit.memo;
+   return`<div class="cat ${thinkOn?"think-cat":""}"><div class="cat-h"><h3>${esc(c.name)}</h3><span class="co">${esc(COMPANIES[c.co].name)}${c.multi?" · 복수 선택 가능":""}</span>${think?'<span class="chip think">고민 중</span>':""}</div>
+   ${memo?`<div class="cat-memo">상담 실장 메모 (${esc(v.consultant||"")}): ${esc(vit.memo)}</div>`:""}
+   ${opts.map(o=>{const on=st.sel[o.id];const tp=thinkOn&&vit.opts&&vit.opts[o.id];return`<label class="opt ${on?"sel":""} ${tp?"think-opt":""}"><input type="checkbox" data-opt="${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}${tp?' <span class="chip think">고민 중 옵션</span>':""}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
      ${on?`<span class="pay"><button type="button" class="seg" data-pay="${o.id}:split" aria-pressed="${on==="split"}">분할 납부</button><button type="button" class="seg" data-pay="${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join("")}</div>`;}).join("")}</section>`;
 }
 function viewCust(){
@@ -948,19 +967,19 @@ function viewPrint(){
    <div class="sec">■ 공사 대상 및 계약자</div>
    <table><tr><th>동·호수</th><td>${st.dong}동 ${st.ho}호</td><th>주택타입</th><td>${utype()}</td></tr><tr><th>성명</th><td>${esc(c.name)}</td><th>휴대폰</th><td>${esc(c.phone)}</td></tr>
    <tr><th>생년월일</th><td>${esc(c.birth)||'<span class="ph">-</span>'}</td><th>현금영수증</th><td>${esc(c.cash||c.phone)}</td></tr><tr><th>주소</th><td colspan="3">${esc(fullAddr)}</td></tr></table>
-   <div class="sec">■ 계약자 자필 확인</div><table><tr><th style="width:18%">동·호수</th><td class="hand"></td><th style="width:12%">성명</th><td class="hand"></td></tr></table>
-   <p class="hand-note">위 인쇄된 동·호수와 같은지 확인하고 직접 적어 주세요. 동·호수 기재 내용은 계약자 본인이 확인한 것으로 봅니다.</p>
+   <div class="sec">■ 계약자 자필 확인</div><table><tr><th style="width:18%">동·호수</th><td class="hand cf"></td><th style="width:12%">성명</th><td class="hand cf"></td></tr></table>
+   <p class="hand-note"><b class="cf cf-in">노란 칸</b>은 계약자가 직접 적거나 체크하는 곳입니다. 위 인쇄된 동·호수와 같은지 확인하고 직접 적어 주세요. 동·호수 기재 내용은 계약자 본인이 확인한 것으로 봅니다.</p>
    <div class="sec">■ 선택 품목 및 납부 계획 (VAT 포함, 원)</div>
    <table><tr><th>품목사</th><th>품목 / 선택</th><th>방식</th><th>금액</th><th>오늘 결제</th></tr>${selected().map(x=>{const sc=schedule(x.opt.price,x.cat.id,x.method);return`<tr><td>${esc(COMPANIES[x.cat.co].name)}</td><td>${esc(x.cat.name)} · ${esc(x.opt.label)}</td><td>${x.method==="lump"?"일시납":"분할"}</td><td class="r num">${won(lineAmt(x.opt.price,x.cat.id,x.method))}</td><td class="r num">${won(sc[0].amt)}</td></tr>`;}).join("")}</table>
    <div class="sec">■ 품목사별 납부 안내</div><table><tr><th>품목사</th><th>오늘 결제</th><th>입금자명 (중도금·잔금 동일)</th><th>입금계좌</th></tr>${Object.entries(g).map(([co,l])=>`<tr><td>${esc(COMPANIES[co].name)}</td><td class="r num">${won(nowAmt(l))}</td><td class="num">${esc(depositorName())}</td><td>${esc(COMPANIES[co].bank)}</td></tr>`).join("")}</table>
-   <div class="sec">■ 개인정보 동의</div><p style="margin:4px 0">① 수집·이용 동의: ${curVisit()?"방명록 등록 시 받음 ("+hhmm(curVisit().at)+")":"□ 동의함"}</p><p style="margin:4px 0">② 제3자 제공 동의 — 받는 자: ${esc(Object.keys(g).map(co=>COMPANIES[co].name).join(", "))} · 목적: 시공·하자보수·대금 수납 · 항목: 성명, 휴대폰, 동·호수, 주소 · 보유: 하자보수 기간 종료까지 · 거부할 수 있으나 거부 시 해당 품목 계약이 어렵습니다. &nbsp; <b style="font-size:13px">□ 동의함</b> <span style="font-size:10px;color:#555">(계약자 직접 체크)</span></p>
-   <div class="sign">계약자 <span>(서명)</span></div><p style="margin-top:24px;font-size:11px">※ 품목사별 계약서가 함께 교부되며, 각 계약의 조건과 약관은 해당 계약서에 따릅니다. 주관사 (주)능구 1544-5033</p></div>`;
+   <div class="sec">■ 개인정보 동의</div><p style="margin:4px 0">① 수집·이용 동의: ${curVisit()?"방명록 등록 시 받음 ("+hhmm(curVisit().at)+")":'<b class="cf cf-in">□ 동의함</b>'}</p><p style="margin:4px 0">② 제3자 제공 동의 — 받는 자: ${esc(Object.keys(g).map(co=>COMPANIES[co].name).join(", "))} · 목적: 시공·하자보수·대금 수납 · 항목: 성명, 휴대폰, 동·호수, 주소 · 보유: 하자보수 기간 종료까지 · 거부할 수 있으나 거부 시 해당 품목 계약이 어렵습니다. &nbsp; <b class="cf cf-in" style="font-size:13px">□ 동의함</b> <span style="font-size:10px;color:#555">(계약자 직접 체크)</span></p>
+   <div class="sign">계약자 <span class="cf">(서명)</span></div><p style="margin-top:24px;font-size:11px">※ 품목사별 계약서가 함께 교부되며, 각 계약의 조건과 약관은 해당 계약서에 따릅니다. 주관사 (주)능구 1544-5033</p></div>`;
   const per=Object.entries(g).map(([co,list])=>{const C=COMPANIES[co];return`<div class="paper"><span class="copy-tag">${P.tag}</span><div class="no">계약번호 ${contractNo(co)}</div><h2>${list.length===1?esc(list[0].cat.name)+" 옵션 계약서":"옵션 계약서"}</h2>
    <div class="sec">■ 공사 대상의 표시</div><table><tr><th>공급위치</th><td colspan="3">${esc(S.siteName)}</td></tr><tr><th>동·호수</th><td>${st.dong}동 ${st.ho}호</td><th>주택타입</th><td>${utype()}</td></tr><tr><th>계약일</th><td colspan="3">${today()}</td></tr></table>
    <div class="sec">■ 옵션 품목 및 가격 (VAT 포함, 원)</div>${list.map(x=>{const sc=schedule(x.opt.price,x.cat.id,x.method);return`<table><tr><th style="width:30%">품목</th><td colspan="3">${esc(x.cat.name)} · ${esc(x.opt.label)}</td></tr><tr><th>정가</th><td class="num">${won(x.opt.price)}</td><th>납부방법</th><td>${x.method==="lump"?"일시납":"분할 납부"}</td></tr>${sc.map(s=>`<tr><th>${esc(s.name)}</th><td>${esc(s.due)}</td><td colspan="2" class="r num">${won(s.amt)}</td></tr>`).join("")}</table>`;}).join("")}
    <div class="sec">■ 결제 방식</div><table><tr><th>납부 계좌</th><td>${esc(C.bank)}</td><th>예금주</th><td>${esc(C.holder)}</td></tr><tr><th>입금자명</th><td colspan="3"><b class="num">${esc(depositorName())}</b> — 중도금·잔금도 이 이름으로 입금해 주세요</td></tr></table>
    <div class="sec">■ 공급받는 자 (갑) / 공급자 (을)</div><table><tr><th>갑</th><td>${esc(c.name)} · ${esc(c.phone)}</td><th>을</th><td>${esc(C.name)} (${esc(C.bizno)})</td></tr></table>
-   <div class="sign">갑 <span>(서명)</span> 을 <span>${esc(C.name)} (인)</span></div>
+   <div class="sign">갑 <span class="cf">(서명)</span> 을 <span class="stamp-slot">${esc(C.name)} (인)${stampOf(co)?`<img class="stamp" src="${stampOf(co)}" alt="">`:""}</span></div>
    <table style="margin-top:14px"><tr><th style="width:30%">카드 영수증 부착란</th><td style="height:100px;vertical-align:top;font-size:11px;color:#555">${esc(C.name)} · 오늘 결제 <b class="num">${won(nowAmt(list))}원</b><br>카드 결제 시 이 칸에 영수증을 부착하세요.</td></tr></table>
    <div class="sec">■ 약관 (뒷면 인쇄)</div><div class="terms"><span class="ph">품목사별 약관 전문이 인쇄되는 자리입니다.</span></div></div>`;}).join("");
   return flow+`<div class="papers">${sum}${per}</div>`;
@@ -1082,18 +1101,17 @@ function bindSamsung(){$$("[data-ss]").forEach(b=>b.onclick=()=>{const[id,k]=b.d
 function viewCustomer(){
   const t=utype();const sel=selected();const chosen=new Set(sel.map(x=>x.cat.id));
   const total=sel.reduce((a,x)=>a+lineAmt(x.opt.price,x.cat.id,x.method),0),todayAmt=sel.reduce((a,x)=>a+schedule(x.opt.price,x.cat.id,x.method)[0].amt,0);
-  const rest=CATALOG.filter(c=>catOpts(c,t).length&&!chosen.has(c.id)).map(c=>({c,p:popularity(c.id,t)})).sort((a,b)=>(b.p?b.p.pct:-1)-(a.p?a.p.pct:-1));
-  const chosenPop=sel.map(x=>({x,p:popularity(x.cat.id,t)}));
+  const rest=CATALOG.filter(c=>!isSS(c.id)&&catOpts(c,t).length&&!chosen.has(c.id)).map(c=>({c,p:null}));
   return`<div class="cv"><div class="cv-top"><div><div class="cv-site">${esc(S.siteName)} 유상옵션</div><h1>${unitLabel(unitKey())} <span>${t} 타입</span></h1></div><button class="seg" id="cvBack">실장 화면으로</button></div>
   <div class="cv-grid"><section class="cv-card"><h2>선택하신 품목</h2>
     ${sel.length?sel.map(x=>`<div class="cv-line"><span><b>${esc(x.cat.name)}</b><small>${esc(x.opt.label)} · ${x.method==="lump"?`일시납 (${S.lumpDiscount}% 할인)`:"분할 납부"}</small></span><span class="num">${won(lineAmt(x.opt.price,x.cat.id,x.method))}원</span><button class="seg" data-cvdel="${x.opt.id}" aria-label="${esc(x.cat.name)} 빼기">빼기</button></div>`).join(""):'<p class="cv-empty">아직 선택한 품목이 없습니다.</p>'}
-    <div class="cv-total"><span>계약 총액</span><b class="num">${won(total)}원</b></div><div class="cv-total sm"><span>오늘 결제 (계약금·일시납)</span><b class="num">${won(todayAmt)}원</b></div>
+    <div class="cv-total"><span>오늘 결제</span><b class="num">${won(todayAmt)}원</b></div><div class="cv-total sm"><span>계약 총액</span><b class="num">${won(total)}원</b></div>
     <p class="cv-note">VAT 포함 · 분할 납부는 ${S.stages.map(s=>s.name+" "+s.ratio+"%").join(" · ")}</p></section>
-  <section class="cv-card"><h2>함께 많이 선택하는 품목</h2><p class="cv-sub">이 현장 ${t} 타입 계약 세대 기준, 행사 중 실제 계약으로 계산합니다.</p>
-    ${rest.map(({c,p})=>`<div class="cv-item"><div class="cv-ih"><b>${esc(c.name)}</b>${p?`<span class="cv-pct">${p.hit} / ${p.n}세대 · ${p.pct}%</span>`:'<span class="cv-sub">집계 중</span>'}</div>
+  <section class="cv-card"><h2>추가로 선택할 수 있는 품목</h2><p class="cv-sub">${t} 타입 기준 · 궁금한 품목은 실장에게 말씀해 주세요.</p>
+    ${rest.map(({c,p})=>`<div class="cv-item"><div class="cv-ih"><b>${esc(c.name)}</b></div>
       ${p?`<div class="cv-bar"><i style="width:${p.pct}%"></i></div>`:""}
       <div class="cv-opts">${catOpts(c,t).map(o=>`<button class="cv-opt" data-cvadd="${o.id}"><span>${esc(o.label)}</span><b class="num">${won(o.price)}원</b><em>담기</em></button>`).join("")}</div></div>`).join("")||'<p class="cv-empty">이 타입의 모든 품목을 선택하셨습니다.</p>'}
-    ${chosenPop.some(z=>z.p)?`<p class="cv-sub" style="margin-top:14px">선택하신 품목: ${chosenPop.filter(z=>z.p).map(z=>`${esc(z.x.cat.name)} ${z.p.pct}%`).join(" · ")} 세대가 함께 선택</p>`:""}</section></div>
+    </section></div>
   <p class="cv-foot">최종 내용은 출력되는 계약서로 한 번 더 확인하신 뒤 서명합니다.</p></div>`;
 }
 function bindCustomer(){
@@ -1334,7 +1352,8 @@ function viewSettings(){
   <h3 style="margin-top:20px;font-size:15px">직원 · 역할 · PIN</h3><p class="hint" style="margin-bottom:4px">안내: 방명록만 · 상담: 방명록·상담·현황 · 계약: 방명록·상담·계약석·현황·관리대장 · 관리: 전체. 계약석 수 <input id="s-desks" type="number" value="${S.desks}" style="width:60px;${inp}"></p>
   <table class="ex-table"><tr><th>이름</th><th>역할</th><th>PIN</th><th></th></tr>${S.staff.map((s,i)=>`<tr><td><input data-stn="${i}" value="${esc(s.name)}" style="width:110px;${inp}"></td><td><select data-str="${i}" style="${inp}">${Object.keys(ROLES).map(r=>`<option ${r===s.role?"selected":""}>${r}</option>`).join("")}</select></td><td><input data-stp="${i}" value="${esc(s.pin)}" inputmode="numeric" maxlength="4" style="width:70px;${inp}"></td><td><button class="x" data-stx="${i}" style="height:34px;width:34px" aria-label="삭제">✕</button></td></tr>`).join("")}</table>
   <button class="seg" id="addStaff" style="padding:8px 14px;margin-top:8px">+ 직원 추가</button>
-  <h3 style="margin-top:20px;font-size:15px">품목별 계약금 예외</h3><table class="ex-table"><tr><th>품목</th><th>계약금(%)</th></tr>${CATALOG.map(c=>`<tr><td>${esc(c.name)}</td><td><input data-ex="${c.id}" type="number" style="width:80px;${inp}" placeholder="공통" value="${S.itemDeposit[c.id]??""}"></td></tr>`).join("")}</table></section>`;
+  <h3 style="margin-top:20px;font-size:15px">품목별 계약금 예외</h3><table class="ex-table"><tr><th>품목</th><th>계약금(%)</th></tr>${CATALOG.map(c=>`<tr><td>${esc(c.name)}</td><td><input data-ex="${c.id}" type="number" style="width:80px;${inp}" placeholder="공통" value="${S.itemDeposit[c.id]??""}"></td></tr>`).join("")}</table>
+  <h3 style="margin-top:20px;font-size:15px">업체별 도장 이미지</h3><p class="hint" style="margin-top:0">계약서의 업체명 옆에 찍힙니다. 배경이 투명한 PNG를 권장합니다. 여기서 올린 이미지는 이 기기에만 저장되니, 계약석 노트북마다 올리거나 개발 담당에게 전달해 모든 기기에 넣으세요.</p><table class="ex-table"><tr><th>업체</th><th>도장</th><th></th></tr>${Object.entries(COMPANIES).filter(([k])=>k!=="SS").map(([k,C])=>`<tr><td>${esc(C.name)}</td><td>${stampOf(k)?`<img src="${stampOf(k)}" alt="" style="height:44px">`:'<span style="color:var(--muted);font-size:12px">없음</span>'}</td><td><label class="seg" style="padding:6px 10px;cursor:pointer">올리기<input type="file" accept="image/*" data-stamp="${k}" hidden></label>${lsGet("oc_stamp_"+k)?` <button class="seg" data-stampdel="${k}" style="padding:6px 10px">지우기</button>`:""}</td></tr>`).join("")}</table></section>`;
 }
 function bindSettings(){
   const as=$("#s-api-save");if(as)as.onclick=()=>{const v=$("#s-api").value.trim();if(v&&!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)){toast("…/exec 로 끝나는 Apps Script 웹 앱 주소를 넣어 주세요.");return;}lsSet("oc_api",v);toast("저장했습니다. 다시 엽니다.");setTimeout(()=>location.reload(),600);};
@@ -1351,6 +1370,8 @@ function bindSettings(){
   $$("[data-stn]").forEach(i=>i.onchange=e=>S.staff[+i.dataset.stn].name=e.target.value.trim());$$("[data-str]").forEach(i=>i.onchange=e=>S.staff[+i.dataset.str].role=e.target.value);
   $$("[data-stp]").forEach(i=>i.onchange=e=>{const v=e.target.value.replace(/\D/g,"");if(v.length!==4)toast("PIN은 숫자 4자리입니다.");else S.staff[+i.dataset.stp].pin=v;});
   $$("[data-stx]").forEach(b=>b.onclick=()=>{S.staff.splice(+b.dataset.stx,1);render();});$("#addStaff").onclick=()=>{S.staff.push({name:"새 직원",pin:"9999",role:"계약"});render();};
+  $$("[data-stamp]").forEach(inp=>inp.onchange=()=>readPhoto(inp,url=>{const im=new Image();im.onload=()=>{const k=Math.min(1,300/Math.max(im.width,im.height));const cv=document.createElement("canvas");cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);lsSet("oc_stamp_"+inp.dataset.stamp,cv.toDataURL("image/png"));toast("도장 이미지를 저장했습니다.");render();};im.src=url;}));
+  $$("[data-stampdel]").forEach(b=>b.onclick=()=>{try{localStorage.removeItem("oc_stamp_"+b.dataset.stampdel);}catch(e){}render();});
   $$("[data-ex]").forEach(i=>i.onchange=e=>{const v=e.target.value;if(v==="")delete S.itemDeposit[i.dataset.ex];else S.itemDeposit[i.dataset.ex]=+v;});
 }
 {const qs=new URLSearchParams(location.search);if(qs.has("guest")){st.guestMode=true;st.guestOnly=true;}
