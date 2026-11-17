@@ -46,6 +46,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .big-seg{padding:10px 16px;font-size:15px}
 button,a,input,select,label,textarea{touch-action:manipulation}
 .pad,.pad button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.noTag{display:inline-block;background:var(--navy);color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;margin-right:6px;font-family:var(--f-num);font-size:.95em}
+.bigno{font-family:var(--f-num);font-size:64px;font-weight:800;color:var(--navy);line-height:1;margin:10px 0}
 .pin{display:flex;gap:10px;margin:4px 0 10px}
 .pin span{width:16px;height:16px;border-radius:50%;border:2px solid var(--navy)}
 .pin span.on{background:var(--navy)}
@@ -346,7 +348,7 @@ tr.dead td{opacity:.5;text-decoration:line-through} tr.dead td:last-child,tr.dea
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.0 · 인천 단가표 반영</span>
+      <span class="sample">검토용 시안 v7.1 · 입장번호</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -364,12 +366,12 @@ const S = {
   stages:[{name:"계약금",ratio:20,due:"계약일"},{name:"중도금",ratio:70,due:"2027-05-15"},{name:"잔금",ratio:10,due:"입주지정일"}],
   lumpDiscount:3, roundUnit:100, itemDeposit:{},
   staff:[{name:"정안내",pin:"5555",role:"안내"},{name:"한상담",pin:"4444",role:"상담"},{name:"오상담",pin:"6666",role:"상담"},
-         {name:"김민수",pin:"1111",role:"계약"},{name:"이지은",pin:"2222",role:"계약"},{name:"박준호",pin:"3333",role:"계약"},{name:"최종태",pin:"0000",role:"관리"}],
+         {name:"김민수",pin:"1111",role:"계약"},{name:"이지은",pin:"2222",role:"계약"},{name:"박준호",pin:"3333",role:"계약"},{name:"최종태",pin:"0000",role:"관리"},{name:"삼성",pin:"7777",role:"삼성"}],
   desks:5, printMode:"A", popMin:10
 };
-const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","status","ledger","settings"]};
-const ROLE_LABEL={안내:"입구 안내",상담:"상담 실장",계약:"계약석",관리:"관리"};
-const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",status:"계약 현황",ledger:"관리대장",settings:"현장 설정"};
+const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","samsung","status","ledger","settings"],삼성:["samsung"]};
+const ROLE_LABEL={안내:"입구 안내",상담:"상담 실장",계약:"계약석",관리:"관리",삼성:"삼성 계약석"};
+const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",samsung:"삼성",status:"계약 현황",ledger:"관리대장",settings:"현장 설정"};
 const PRINT={
  A:{name:"감압지 2매 1조",print:"감압지에 1세트 인쇄 (윗장 주관사 보관용 · 아랫장 고객용)",sign:"한 번 쓰면 아랫장에 전사됩니다",receipt:"윗장·아랫장",tag:"2매 1조 · 윗장 주관사 / 아랫장 고객"},
  B:{name:"일반용지 2부",print:"일반 용지에 2부 인쇄 (고객용 · 주관사 보관용)",sign:"2부에 각각 서명합니다",receipt:"고객용·보관용 2부",tag:"고객용 / 주관사 보관용"},
@@ -452,7 +454,13 @@ const $$=s=>document.querySelectorAll(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
 const hhmm=t=>new Date(t).toTimeString().slice(0,5);
-const unitLabel=u=>{const[d,h]=u.split("-");return`${d}동 ${h}호`;};
+const unitLabel=u=>{if(!u)return"동·호 미확정";const[d,h]=u.split("-");return`${d}동 ${h}호`;};
+/* v7.1 입장번호 */
+const noTag=v=>v&&v.no?`<span class="noTag">${v.no}번</span>`:"";
+const isSS=c=>c==="SAM";
+const hasOurs=v=>Object.entries(v.items||{}).some(([c,it])=>!isSS(c)&&(it.state==="think"||(it.state==="sel"&&Object.keys(it.opts||{}).length)));
+const hasSS=v=>{const it=(v.items||{}).SAM;return!!(it&&(it.state==="think"||(it.state==="sel"&&Object.keys(it.opts||{}).length)));};
+function notifyServer(v,kind,text){if(!API||!v)return;try{fetchT(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({op:"notify",id:v.id,kind,text,phone:v.phone,no:v.no})},10000).catch(()=>{});}catch(e){}}
 const unitCode=u=>{const[d,h]=u.split("-");return d+h.padStart(4,"0");};
 function parseUnit(q){q=(q||"").replace(/\D/g,"");if(q.length<6)return"";const d=q.slice(0,3),h=String(+q.slice(3));const k=d+"-"+h;return UNITS[k]?k:"";}
 function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800);}
@@ -492,14 +500,16 @@ function seedSample(){let s=7;const iso=d=>new Date(Date.parse(today())+d*864e5)
   /* 지금 진행 중인 샘플: 대기 2, 상담 중 1, 방문 2 */
   const now=Date.now();
   VISITS.push({id:"Q1",unit:"101-1201",type:"59A",name:"홍길동",phone:"010-1234-5678",birth:"1980-03-12",addr:"인천광역시 미추홀구 숭의로 10",zip:"22175",addrDetail:"5층",via:"qr",at:now-38*60000,status:"계약대기",queueAt:now-9*60000,consultant:"한상담",date:today(),
-    items:{FILM:{state:"sel",opts:{FPCA:"split"}},FRIDGE:{state:"think",opts:{FR1:"split"},memo:"배우자와 상의 후 결정. 냉장고 모델 확인 필요"},NET:{state:"sel",opts:{N06A:"lump"}},COAT:{state:"think",opts:{},memo:"가격 부담"}}});
+    items:{SAM:{state:"sel",opts:{SA1:"split"}},FILM:{state:"sel",opts:{FPCA:"split"}},FRIDGE:{state:"think",opts:{FR1:"split"},memo:"배우자와 상의 후 결정. 냉장고 모델 확인 필요"},NET:{state:"sel",opts:{N06A:"lump"}},COAT:{state:"think",opts:{},memo:"가격 부담"}}});
   VISITS.push({id:"Q2",unit:"102-702",type:"59A",name:"윤서연",phone:"010-2222-3456",addr:"서울특별시 송파구 올림픽로 300",zip:"05551",via:"staff",staffBy:"정안내",paperNo:"17",at:now-30*60000,status:"계약대기",queueAt:now-4*60000,consultant:"오상담",date:today(),
     items:{FILM:{state:"sel",opts:{FGA:"split"}},GROUT:{state:"sel",opts:{GBA:"split"}},FOOD:{state:"think",opts:{},memo:"싱크대 하부 공간 확인 필요"}}});
   VISITS.push({id:"Q3",unit:"103-1503",type:"84",name:"장민호",phone:"010-7777-1212",addr:"",via:"tablet",at:now-15*60000,status:"상담중",consultant:"한상담",date:today(),items:{FILM:{state:"sel",opts:{FPCC:"split"}}}});
   VISITS.push({id:"Q4",unit:"101-802",type:"59A",name:"서지우",phone:"010-3030-4040",addr:"",via:"qr",at:now-6*60000,status:"방문",date:today(),items:{}});
   VISITS.push({id:"Q5",unit:"",type:"",name:"박○○ (동·호 모름)",phone:"010-5656-7878",addr:"",via:"staff",staffBy:"정안내",paperNo:"18",at:now-2*60000,status:"방문",date:today(),items:{}});
+  numberSample();
 }
 let queueSeq=2;
+function numberSample(){const by={};VISITS.slice().sort((a,b)=>a.at-b.at).forEach(v=>{by[v.date]=(by[v.date]||0)+1;if(!v.no)v.no=by[v.date];v.tok=v.tok||Math.random().toString(36).slice(2,10);});}
 
 /* ===== 상태 ===== */
 const blank=()=>({step:0,dong:"",ho:"",sel:{},cust:{name:"",phone:"",birth:"",addr:"",addrDetail:"",zip:"",cash:""},consent1:false,consent2:false,paid:{},addrOpen:false,addrQ:"",printed:false,signedPhoto:false,custView:false,visitId:null,t0:null});
@@ -581,6 +591,7 @@ function render(){_render();afterRender();}
 function _render(){
   $("#siteLabel").textContent=S.siteName+" ("+S.siteCode+")";
   const app=$("#app");
+  if(st.meMode){$("#topbar").hidden=true;app.innerHTML=viewMe();return;}
   if(st.guestMode){$("#topbar").hidden=true;app.innerHTML=viewGuestPhone();bindGuest(true);return;}
   if(st.custView&&st.user&&st.view==="contract"&&st.step>=1){$("#topbar").hidden=true;app.innerHTML=viewCustomer();bindCustomer();return;}
   $("#topbar").hidden=false;
@@ -593,7 +604,7 @@ function _render(){
   if(!st.user){app.innerHTML=viewLogin();bindLogin();return;}
   if(!allowed.includes(st.view))st.view=allowed[0];
   ({guest:()=>{app.innerHTML=viewGuestDesk();bindGuest(false);},consult:()=>{app.innerHTML=viewConsult();bindConsult();},
-    status:()=>{app.innerHTML=viewStatus();bindStatus();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},
+    status:()=>{app.innerHTML=viewStatus();bindStatus();},samsung:()=>{app.innerHTML=viewSamsung();bindSamsung();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},
     contract:()=>{const body=[viewQueue,viewItems,viewCust,viewPrint,viewPay][st.step]();app.innerHTML=`<div class="main"><div style="min-width:0">${body}</div>${sidePanel()}</div>`;bindContract();}})[st.view]();
 }
 
@@ -606,7 +617,7 @@ function viewLogin(){
   ${s&&s.role==="계약"?`<div class="field" style="margin-top:14px"><label>계약석</label><div class="row" style="gap:6px">${Array.from({length:S.desks},(_,i)=>`<button type="button" class="seg big-seg" data-desk="${i+1}" aria-pressed="${st.desk===i+1}">${i+1}번</button>`).join("")}</div></div>`:""}
   <div class="field" style="margin-top:14px"><label>PIN 4자리</label><div class="pin">${[0,1,2,3].map(i=>`<span class="${i<st.pin.length?"on":""}"></span>`).join("")}</div>
    <div class="pad">${["1","2","3","4","5","6","7","8","9","지움","0","←"].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join("")}</div></div>
-  <p class="note">시안용 PIN: 안내 정안내 5555 · 상담 한상담 4444, 오상담 6666 · 계약 김민수 1111, 이지은 2222, 박준호 3333 · 관리 최종태 0000</p></section>`;
+  <p class="note">시안용 PIN: 안내 정안내 5555 · 상담 한상담 4444, 오상담 6666 · 계약 김민수 1111, 이지은 2222, 박준호 3333 · 관리 최종태 0000 · 삼성 계약석 삼성 7777</p></section>`;
 }
 function bindLogin(){
   $$("[data-desk]").forEach(b=>b.onclick=()=>{st.desk=+b.dataset.desk;render();});
@@ -616,7 +627,7 @@ function bindLogin(){
     /* v6.9: 4자리가 되기 전에는 점만 바꾼다 (화면 전체를 다시 그리면 휴대폰에서 화면이 튐) */
     if(st.pin.length<4){$$(".pin span").forEach((d,i)=>d.classList.toggle("on",i<st.pin.length));return;}
     if(st.pin.length===4){const s=S.staff.find(x=>x.name===st.pick);
-      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.view=ROLES[s.role].includes("contract")&&s.role==="계약"?"contract":s.role==="상담"?"consult":"guest";st.pin="";st.pick="";toast(`${s.name}(${ROLE_LABEL[s.role]||s.role}) 로그인`);}
+      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.view=s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="삼성"?"samsung":"guest";st.pin="";st.pick="";toast(`${s.name}(${ROLE_LABEL[s.role]||s.role}) 로그인`);}
       else{st.pin="";toast("PIN이 맞지 않습니다.");}}
     render();});
 }
@@ -644,19 +655,21 @@ function guestForm(staffMode){
 }
 function viewGuestPhone(){
   return`<div class="guest-wrap">${st.guestOnly?"":`<div class="guest-bar"><span>고객 휴대폰 화면 (QR로 접속)</span><button class="seg" id="g-back">직원 화면으로</button></div>`}
-  <div class="phone">${st.gdone?`<div class="done-card"><b>등록되었습니다</b>상담 실장이 곧 안내해 드립니다.<br>${esc(S.siteName)} 유상옵션 행사</div><div class="nav"><button class="btn sub" id="g-again">다른 분 등록</button></div>`:
+  <div class="phone">${st.gdone?(()=>{const r=st.gres||{};const link=r.tok?location.pathname+"?me="+encodeURIComponent(r.id)+"&t="+encodeURIComponent(r.tok):"";
+     return`<div class="done-card" style="text-align:center">${r.no?`<div style="color:var(--muted)">입장번호</div><div class="bigno">${r.no}</div>`:""}<b>${r.dup?"이미 등록된 세대입니다":"등록되었습니다"}</b>${r.dup?"같은 번호로 안내해 드립니다.":r.no?"순서가 되면 이 번호로 안내해 드립니다.<br>이 화면을 캡처해 두셔도 됩니다.":"입장번호는 입구 직원에게 받아 주세요."}<br><small>${esc(S.siteName)} 유상옵션 행사</small></div>
+     ${link?`<div class="nav"><a class="btn" href="${link}" style="text-align:center;text-decoration:none">내 순서 보기</a></div>`:""}${st.guestOnly?"":`<div class="nav"><button class="btn sub" id="g-again">다른 분 등록</button></div>`}`;})():
    `<h2>${esc(S.siteName)} 옵션 행사 방명록</h2><p class="hint">한 번 등록하면 상담과 계약에 그대로 쓰여서 다시 적지 않으셔도 됩니다.</p>${guestForm(false)}`}</div></div>`;
 }
 function viewGuestDesk(){
   const list=VISITS.filter(v=>v.date===visitDay()).sort((a,b)=>b.at-a.at);
-  return`<div class="two"><section class="panel"><span class="who ${st.role==="안내"?"staff":"cust"}">${st.role==="안내"?"안내 직원":"방명록"}</span><h2>방명록 등록</h2>
+  return`<div class="two"><section class="panel"><span class="who ${st.role==="안내"?"staff":"cust"}">${st.role==="안내"?"안내 직원":"방명록"}</span><h2>방명록 등록</h2>${st.gres&&st.gres.no&&!st.guestMode?`<div class="alert" style="font-size:18px">방금 등록: <b class="num">${st.gres.no}번</b>${st.gres.dup?" (이미 등록된 세대)":""} — 번호표에 적어 드리세요</div>`:""}
   <div class="qrbox"><span class="qr-img">${QR_SVG}</span><span><b>입구 QR</b><br><small>휴대폰 카메라로 찍으면 고객용 방명록이 바로 열립니다.</small><br><small class="num" style="word-break:break-all;font-size:11px;color:var(--muted)">${GUEST_URL}</small><br>
    <span class="row" style="gap:6px;margin-top:6px"><button class="seg" id="g-phone-preview">고객 화면 미리보기</button><button class="seg" id="g-qr-print">QR 안내문 인쇄</button></span></span></div>
   <div id="qrPoster"><div class="qp-site">${esc(S.siteName)} 유상옵션 행사</div><h1>방명록을 휴대폰으로 등록해 주세요</h1><div class="qp-qr">${QR_SVG}</div>
    <p>휴대폰 카메라로 QR을 찍으면 방명록이 열립니다.<br>한 번 등록하면 상담과 계약에 그대로 쓰여 다시 적지 않으셔도 됩니다.</p><p class="qp-sub">QR이 어려우시면 안내 직원에게 말씀해 주세요.</p></div>
   ${guestForm(true)}</section>
   <section class="panel"><h2>오늘 방문 ${list.length}세대</h2><p class="hint">최근 등록 순. 상태는 상담·계약 단계에 따라 자동으로 바뀝니다.</p>
-  <div class="vlist">${(()=>{const wl=waitList().map(x=>x.id);return list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow">${n?`<span class="ord">${n}</span>`:""}<span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"상담 대기 "+n+"번":statusName(v.status)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>';})()}</div></section></div>`;
+  <div class="vlist">${(()=>{const wl=waitList().map(x=>x.id);return list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow">${noTag(v)}<span><b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"대기 "+n+"번째":statusName(v.status)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · 상담 "+esc(v.consultant):""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>';})()}</div></section></div>`;
 }
 /* 상담 대기 순번: 오늘 방문했고 아직 상담을 시작하지 않은 세대, 먼저 온 순서 */
 /* 검토용 시안: 오늘 방문이 하나도 없으면 가장 최근 방문일을 '오늘'처럼 보여 준다 (샘플을 넣은 다음 날에도 화면이 비지 않게). 실제 버전에서는 끔 */
@@ -710,12 +723,43 @@ function bindGuest(phone){
     if(!g.name.trim()||!/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(g.phone.trim())){toast("이름과 휴대폰 번호를 확인해 주세요.");return;}
     if(!g.c1){toast("필수 동의에 체크해 주세요.");return;}
     const staff=!phone&&g.mode==="staff";
-    VISITS.push({id:"G"+Date.now(),unit,type:UNITS[unit]||"",name:g.name.trim(),phone:g.phone.trim(),addr:g.addr,zip:g.zip,addrDetail:g.addrDetail,sms:g.c2,
-      via:phone?"qr":staff?"staff":"tablet",staffBy:staff?st.user:"",paperNo:staff?g.paperNo:"",at:Date.now(),status:"방문",date:today(),items:{}});
-    st.g={unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:g.mode,paperNo:""};
-    if(phone){st.gdone=true;}else toast("방명록에 등록했습니다.");render();};
+    const rec={id:"G"+Date.now()+Math.random().toString(36).slice(2,5),unit,type:UNITS[unit]||"",name:g.name.trim(),phone:g.phone.trim(),addr:g.addr,zip:g.zip,addrDetail:g.addrDetail,sms:g.c2,
+      via:phone?"qr":staff?"staff":"tablet",staffBy:staff?st.user:"",paperNo:staff?g.paperNo:"",at:Date.now(),status:"방문",date:today(),items:{}};
+    sb.disabled=true;sb.textContent="등록 중…";
+    registerVisit(rec).then(r=>{
+      st.g={unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:g.mode,paperNo:""};
+      st.gres=r;
+      if(phone){st.gdone=true;}else toast(r.dup?`이미 ${r.no}번으로 등록된 세대입니다.`:r.no?`${r.no}번으로 등록했습니다. 번호표에 적어 드리세요.`:"등록했습니다. (번호는 연결되면 붙습니다)");
+      render();});};
 }
 
+/* v7.1: 등록 = 서버에서 입장번호 발급 (기기끼리 번호가 겹치지 않게 한 곳에서 매김) */
+async function registerVisit(rec){
+  rec.tok=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,8);
+  if(!API){const mx=VISITS.filter(v=>v.date===rec.date).reduce((m,v)=>Math.max(m,v.no||0),0);
+    const dup=rec.unit&&VISITS.find(v=>v.date===rec.date&&v.unit===rec.unit&&v.no);if(dup)return{ok:true,dup:true,no:dup.no,id:dup.id};
+    rec.no=mx+1;VISITS.push(rec);return{ok:true,no:rec.no,id:rec.id,tok:rec.tok};}
+  try{const r=await fetchT(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({op:"register",row:{col:"visits",id:rec.id,by:st.user||"고객",data:rec}})},15000).then(x=>x.json());
+    if(r&&r.ok){if(r.dup)return{ok:true,dup:true,no:r.no,id:r.id};rec.no=r.no;VISITS.push(rec);SYNC.hash["visits|"+rec.id]=JSON.stringify(rec);return{ok:true,no:r.no,id:rec.id,tok:rec.tok};}
+  }catch(e){}
+  VISITS.push(rec);return{ok:false,id:rec.id};
+}
+/* ===== 고객 '내 순서' 화면 (?me=…&t=…) ===== */
+async function loadMe(){try{const r=await fetchT(API+(API.includes("?")?"&":"?")+"me="+encodeURIComponent(st.meId)+"&t="+encodeURIComponent(st.meTok),{},10000).then(x=>x.json());st.me=r;}catch(e){st.me=st.me||{err:"net"};}render();}
+function viewMe(){const m=st.me;
+  if(!m)return`<div class="guest-wrap"><div class="phone"><p class="hint">불러오는 중…</p></div></div>`;
+  if(!m.ok)return`<div class="guest-wrap"><div class="phone"><h2>${esc(S.siteName)} 옵션 행사</h2><p class="hint">${m.err==="net"?"인터넷 연결을 확인해 주세요. 잠시 후 다시 확인합니다.":"등록 정보를 찾을 수 없습니다. 입구 직원에게 말씀해 주세요."}</p></div></div>`;
+  let big="",sub="";
+  if(m.desk&&m.status==="계약대기"){big=`${m.desk}번 계약석으로 와 주세요`;sub="계약 실장이 기다리고 있습니다.";}
+  else if(m.status==="방문"){big=m.ahead?`상담 대기 · 앞에 ${m.ahead}분`:"곧 상담 실장이 안내해 드립니다";sub="순서가 되면 상담 실장이 찾아갑니다.";}
+  else if(m.status==="상담중"){big="상담 중입니다";sub="";}
+  else if(m.status==="계약대기"){big=m.ahead?`계약석 대기 · 앞에 ${m.ahead}분`:"곧 계약석에서 부릅니다";sub="번호를 부르면 계약석으로 와 주세요.";}
+  else if(m.status==="계약"){big="계약이 완료되었습니다";sub="감사합니다.";}
+  else{big="방문해 주셔서 감사합니다";sub="궁금한 점은 상담 실장에게 문의해 주세요.";}
+  return`<div class="guest-wrap"><div class="phone" style="text-align:center"><div style="color:var(--muted)">${esc(S.siteName)} 옵션 행사</div>
+   <div style="margin-top:14px;color:var(--muted)">입장번호</div><div class="bigno">${m.no||"-"}</div>
+   <div style="font-size:20px;font-weight:700;margin:10px 0 4px;${m.desk&&m.status==="계약대기"?"color:var(--accent)":""}">${big}</div><p class="hint">${sub}</p>
+   <p class="note">이 화면은 자동으로 새로 고쳐집니다. 화면을 닫아도 이 주소로 다시 열 수 있습니다.</p></div></div>`;}
 /* ===== 상담 체크리스트 ===== */
 function viewConsult(){
   const td=VISITS.filter(v=>v.date===visitDay());
@@ -723,25 +767,35 @@ function viewConsult(){
   const wait=waitList();
   const others=td.filter(x=>x.status==="상담중"&&x.consultant!==st.user).sort((a,b)=>a.at-b.at);
   const v=VISITS.find(x=>x.id===st.cv);
-  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${n?`<span class="ord">${n}</span>`:""}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?waitTxt(x):statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장${!n&&x.consultant&&x.consultant!==st.user?" · "+esc(x.consultant)+" 실장":""}</small></button>`;
+  const row=(x,n)=>`<button class="vrow ${x.id===st.cv?"on":""} ${n===1?"first":""}" data-cv="${x.id}">${noTag(x)}<b>${esc(x.name)}</b><span class="chip ${n?"think":statusChip(x.status)}">${n?n+"번째 · "+waitTxt(x):x.status==="계약대기"&&x.calledDesk?"계약석 "+x.calledDesk+"번 진행":statusName(x.status)}</span><small>${x.unit?unitLabel(x.unit)+" · "+x.type:"동·호 미확정"} · ${hhmm(x.at)} 입장${!n&&x.consultant&&x.consultant!==st.user?" · "+esc(x.consultant)+" 실장":""}</small></button>`;
+  const waitC=td.filter(x=>x.status==="계약대기"&&!x.calledDesk).sort((a,b)=>a.queueAt-b.queueAt);
   return`<div class="two"><section class="panel"><span class="who staff">상담 실장</span><h2>상담할 세대</h2>
+   <div class="field" style="margin:6px 0 10px"><input id="cv-q" inputmode="numeric" placeholder="번호 · 동호수 · 휴대폰 뒤 4자리로 찾기" value="${esc(st.cq||"")}" autocomplete="off"><div id="cv-qres">${searchRes(st.cq)}</div></div>
    ${mine.length?`<h3 class="vh">내가 상담 중</h3><div class="vlist">${mine.map(x=>row(x,0)).join("")}</div>`:""}
-   <h3 class="vh">상담 대기 · 입장 순서 ${wait.length}세대</h3><p class="hint" style="margin-top:0">먼저 온 순서입니다. 1번 고객부터 인사하고 [상담 시작]을 누르세요.</p>
+   <h3 class="vh">상담 대기 · 입장 순서 ${wait.length}세대</h3><p class="hint" style="margin-top:0">먼저 온 순서입니다. 맨 위 고객부터 번호로 부르고 [상담 시작]을 누르세요.</p>
    <div class="vlist">${wait.map((x,i)=>row(x,i+1)).join("")||'<p class="empty">상담을 기다리는 세대가 없습니다.</p>'}</div>
-   ${others.length?`<h3 class="vh">다른 실장 상담 중</h3><div class="vlist dim">${others.map(x=>row(x,0)).join("")}</div>`:""}
+   ${others.length?`<h3 class="vh">다른 실장 상담 중 (눌러서 이어받기 가능)</h3><div class="vlist dim">${others.map(x=>row(x,0)).join("")}</div>`:""}
+   ${waitC.length?`<h3 class="vh">계약석 대기 (눌러서 다시 열기 가능)</h3><div class="vlist dim">${waitC.map(x=>row(x,0)).join("")}</div>`:""}
   </section>
   <section class="panel">${v?consultSheet(v):'<h2>체크리스트</h2><p class="hint">왼쪽 상담 대기 목록에서 1번 고객을 누르세요.</p>'}</section></div>`;
 }
+function searchRes(q){q=(q||"").replace(/\D/g,"");if(!q)return"";const td=visitDay();
+  let r=VISITS.filter(v=>(q.length<=3&&String(v.no)===q&&v.date===td)||(q.length===4&&((v.phone||"").replace(/\D/g,"").endsWith(q)||(v.unit&&v.unit.endsWith("-"+String(+q)))))||(q.length>=6&&v.unit===parseUnit(q)));
+  r=r.sort((a,b)=>(b.date>a.date?1:b.date<a.date?-1:0)||(b.at-a.at)).slice(0,8);
+  if(!r.length)return'<p class="note" style="margin:4px 0">찾는 고객이 없습니다.</p>';
+  return`<div class="vlist" style="margin-top:6px">${r.map(x=>`<button class="vrow" data-cv="${x.id}">${noTag(x)}<b>${esc(x.name)}</b><span class="chip ${statusChip(x.status)}">${x.date!==td?x.date.slice(5)+" 방문":statusName(x.status)}</span><small>${unitLabel(x.unit)}${x.type?" · "+x.type:""}${x.consultant?" · 상담 "+esc(x.consultant):""}</small></button>`).join("")}</div>`;}
 function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;
-  return`<h2>${esc(v.name)} <span class="chip think">상담 대기 ${n}번 · ${waitTxt(v)}</span></h2>
+  return`<h2>${noTag(v)}${esc(v.name)} <span class="chip think">${v.status==="미결정"?"결정 보류 · 다시 상담 가능":"대기 "+n+"번째 · "+waitTxt(v)}</span></h2>
    <div class="kv" style="margin:10px 0"><span>동·호수</span><b>${v.unit?unitLabel(v.unit)+" · "+v.type:"미확정 (상담 중 확인)"}</b><span>휴대폰</span><b class="num">${esc(v.phone||"-")}</b><span>입장</span><b>${hhmm(v.at)} · ${esc(viaLabel(v))}</b></div>
-   ${n>1?`<p class="note">앞에 ${n-1}세대가 더 기다리고 있습니다. 순서를 건너뛰는 경우에만 이 고객을 먼저 상담하세요.</p>`:""}
+   ${n>1?`<p class="note">앞에 ${n-1}세대가 더 기다리고 있습니다.</p>`:""}
    <div class="nav"><button class="btn" id="cv-start">상담 시작</button></div>
    <p class="note">누르면 다른 실장 화면에서 '${esc(st.user)} 상담 중'으로 바뀌어 같은 고객에게 겹쳐 가지 않습니다.</p>`;}
 function consultSheet(v){
-  if(v.status==="방문")return startCard(v);
-  if(v.status==="상담중"&&v.consultant!==st.user)return`<h2>${esc(v.name)}</h2><p class="hint">${esc(v.consultant||"다른")} 실장이 상담 중입니다.</p>`;
-  if(!v.unit)return`<h2>${esc(v.name)}</h2><p class="hint">동·호수가 아직 없습니다. 고객에게 확인해 입력하세요.</p><div class="field"><label for="cv-unit">동·호수 (숫자만)</label><input id="cv-unit" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="cv-hit"></div></div><div class="nav"><button class="btn" id="cv-setunit">확정</button></div>`;
+  if(v.status==="방문"||v.status==="미결정")return startCard(v);
+  if(v.status==="상담중"&&v.consultant!==st.user)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">${esc(v.consultant||"다른")} 실장이 상담 중입니다.</p><div class="nav"><button class="btn" id="cv-take">이어서 상담하기</button></div><p class="note">누르면 담당이 ${esc(st.user)}(으)로 바뀌고, 지금까지 체크한 내용은 그대로 이어집니다.</p>`;
+  if(v.status==="계약대기"&&v.calledDesk)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약석 ${v.calledDesk}번에서 진행 중입니다. 바꿀 내용은 계약석에 말씀해 주세요.</p>`;
+  if(v.status==="계약")return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약이 끝난 세대입니다. 추가 계약은 계약석에서 동·호수로 진행합니다.</p>`;
+  if(!v.unit&&!v.type)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">동·호수가 아직 없습니다. 알면 입력하고, 모르면 타입만 골라 상담을 시작하세요. 동·호수는 계약석에서 확정합니다.</p><div class="field"><label for="cv-unit">동·호수 (숫자만)</label><input id="cv-unit" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="cv-hit"></div></div><div class="nav"><button class="btn" id="cv-setunit">확정</button></div><div class="row" style="gap:6px;align-items:center;margin-top:12px"><small style="color:var(--muted)">타입만 고르기</small>${ALL.map(t=>`<button type="button" class="seg" data-ty="${t}" style="padding:8px 14px">${t}</button>`).join("")}</div>`;
   const items=v.items;let total=0,thinkN=0;
   const cats=CATALOG.filter(c=>catOpts(c,v.type).length);
   const html=cats.map(c=>{const it=items[c.id]||{state:"no",opts:{}};const opts=catOpts(c,v.type);
@@ -752,20 +806,27 @@ function consultSheet(v){
      ${it.state!=="no"?opts.map(o=>{const on=it.opts[o.id];return`<label class="opt ${on?"sel":""}" style="background:#fff"><input type="checkbox" data-co="${c.id}:${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
        ${on&&it.state==="sel"?`<span class="pay"><button type="button" class="seg" data-cm="${c.id}:${o.id}:split" aria-pressed="${on==="split"}">분할</button><button type="button" class="seg" data-cm="${c.id}:${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join(""):""}
      ${it.state!=="no"?`<input class="memo" data-memo="${c.id}" value="${esc(it.memo||"")}" placeholder="${it.state==="think"?"계약 실장에게 전할 메모 (예: 배우자와 상의 후 결정)":"메모 (선택 · 예: 색상 확인 필요)"}">`:""}</div>`;}).join("");
-  return`<div class="row" style="justify-content:space-between;align-items:baseline"><h2>${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">선택 합계 ${won(total)}원</span></div>
+  const prev=VISITS.filter(x=>x.id!==v.id&&x.date<v.date&&((v.unit&&x.unit===v.unit)||(v.phone&&x.phone===v.phone))&&Object.keys(x.items||{}).length).sort((a,b)=>b.at-a.at)[0];
+  return`${prev?`<div class="alert" style="margin-bottom:8px">재방문 고객 · ${prev.date.slice(5)} 상담(${esc(prev.consultant||"-")}) 기록이 있습니다. ${Object.keys(v.items).length?"":`<button class="seg" id="cv-prev" data-prev="${prev.id}" style="padding:6px 10px">이전 체크 불러오기</button>`}</div>`:""}
+   ${v.unit?"":`<div class="alert" style="margin-bottom:8px">동·호수 미확정 — 계약석에서 계약서 출력 전에 확인합니다.</div>`}
+   <div class="row" style="justify-content:space-between;align-items:baseline"><h2>${noTag(v)}${esc(v.name)} · ${unitLabel(v.unit)} <span class="chip">${v.type}</span></h2><span class="num" style="font-weight:700;color:var(--navy)">선택 합계 ${won(total)}원</span></div>
    <div class="row" style="gap:6px;align-items:center;margin:4px 0 8px"><small style="color:var(--muted)">타입 확인</small>${ALL.map(t=>`<button type="button" class="seg" data-ty="${t}" aria-pressed="${v.type===t}" style="padding:6px 12px">${t}</button>`).join("")}</div>
    <p class="hint">${esc(viaLabel(v))} · 종이 체크리스트와 같은 순서입니다. 이 타입에 없는 항목은 보이지 않습니다. 타입이 다르면 위에서 바꾸세요.</p>${html}
-   <div class="nav"><button class="btn" id="cv-done">${v.status==="계약대기"?"수정 저장 (대기 유지)":"상담 완료 · 계약석 대기 등록"}</button></div>
+   <div class="nav"><button class="btn" id="cv-done">${v.status==="계약대기"?"수정 저장 (대기 유지)":"상담 완료 · 계약석 대기 등록"}</button>${v.status==="상담중"?'<button class="btn ghost" id="cv-hold">오늘은 결정 안 함</button>':""}</div>
    <p class="note">고민 중 ${thinkN}개와 메모는 계약석 화면 맨 위와 상담 확인서에 함께 표시됩니다.</p>`;
 }
 function bindConsult(){
   $$("[data-cv]").forEach(b=>b.onclick=()=>{st.cv=b.dataset.cv;render();});
+  const cq=$("#cv-q");if(cq)cq.oninput=()=>{st.cq=cq.value;$("#cv-qres").innerHTML=searchRes(st.cq);$$("#cv-qres [data-cv]").forEach(b=>b.onclick=()=>{st.cv=b.dataset.cv;st.cq="";render();});};
   const sb=$("#cv-start");if(sb)sb.onclick=async()=>{const id=st.cv;sb.disabled=true;sb.textContent="확인 중…";
     try{if(API)await syncPull();}catch(e){}
     const x=VISITS.find(y=>y.id===id);
-    if(!x||x.status!=="방문"){toast(x&&x.consultant?`이미 ${x.consultant} 실장이 상담을 시작했습니다. 다음 순번 고객을 고르세요.`:"이미 상담이 시작된 고객입니다.");st.cv=null;render();return;}
+    if(!x||(x.status!=="방문"&&x.status!=="미결정")){toast(x&&x.consultant?`이미 ${x.consultant} 실장이 상담을 시작했습니다. 다음 순번 고객을 고르세요.`:"이미 상담이 시작된 고객입니다.");st.cv=null;render();return;}
     x.status="상담중";x.consultant=st.user;x.startAt=Date.now();toast(`${x.name} 고객 상담을 시작합니다.`);render();};
   const v=VISITS.find(x=>x.id===st.cv);if(!v)return;
+  const tk=$("#cv-take");if(tk)tk.onclick=()=>{const from=v.consultant;v.consultant=st.user;(v.handoff=v.handoff||[]).push({at:Date.now(),from,to:st.user});toast(`${from} 실장 상담을 이어받았습니다.`);render();};
+  const hd=$("#cv-hold");if(hd)hd.onclick=()=>{v.status="미결정";v.holdAt=Date.now();toast("결정 보류로 정리했습니다. 체크한 내용은 그대로 남습니다.");st.cv=null;render();};
+  const pv=$("#cv-prev");if(pv)pv.onclick=()=>{const x=VISITS.find(y=>y.id===pv.dataset.prev);if(x){v.items=JSON.parse(JSON.stringify(x.items));if(!v.type)v.type=x.type;if(!v.unit&&x.unit)v.unit=x.unit;toast("이전 상담 체크를 불러왔습니다.");render();}};
   const cu=$("#cv-unit");if(cu)cu.oninput=()=>{const h=parseUnit(cu.value);$("#cv-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
   const cs=$("#cv-setunit");if(cs)cs.onclick=()=>{const h=parseUnit(cu.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}v.unit=h;v.type=UNITS[h];render();};
   $$("[data-ty]").forEach(b=>b.onclick=()=>{const t=b.dataset.ty;if(t===v.type)return;v.type=t;Object.values(v.items).forEach(it=>{Object.keys(it.opts||{}).forEach(o=>{if(!findOpt(o).opt.types.includes(t))delete it.opts[o];});});toast(`${t} 타입으로 바꿨습니다. 맞지 않는 옵션은 지웠습니다.`);render();});
@@ -777,33 +838,43 @@ function bindConsult(){
   $$("[data-memo]").forEach(i=>{const save=()=>{const vv=VISITS.find(x=>x.id===st.cv)||v;const it=vv.items[i.dataset.memo];if(!it)return;it.memo=i.value;afterRender();};i.oninput=()=>{clearTimeout(i._t);i._t=setTimeout(save,500);};i.onchange=save;i.onblur=save;});
   const d=$("#cv-done");if(d)d.onclick=()=>{$$("[data-memo]").forEach(i=>{const vv=VISITS.find(x=>x.id===st.cv)||v;if(vv.items[i.dataset.memo])vv.items[i.dataset.memo].memo=i.value;});const vals=Object.values(v.items);
     if(!vals.some(it=>it.state==="sel"&&Object.keys(it.opts).length)&&!vals.some(it=>it.state==="think")){toast("선택하거나 고민 중인 품목이 하나 이상 있어야 합니다.");return;}
-    if(v.status!=="계약대기"){v.status="계약대기";v.queueAt=Date.now();toast(`계약석 대기 ${queue().length}번째로 등록했습니다. 고객에게 안내해 주세요.`);}else toast("수정했습니다.");
+    if(hasSS(v)&&!v.samsung)v.samsung={status:"대기",at:Date.now()};
+    if(v.status!=="계약대기"){v.status="계약대기";v.queueAt=Date.now();
+      if(!hasOurs(v))toast("삼성 품목만 선택했습니다. 고객을 삼성 계약석으로 안내해 주세요.");
+      else toast(`계약석 대기 ${queue().length}번째로 등록했습니다.${hasSS(v)?" 삼성 품목은 삼성 계약석에서 따로 계약합니다.":""}`);}else toast("수정했습니다.");
     st.cv=null;render();};
 }
 
 /* ===== 계약석: 대기열 → 확인 → 출력·서명 → 결제 ===== */
-const queue=()=>VISITS.filter(v=>v.status==="계약대기").sort((a,b)=>a.queueAt-b.queueAt);
+const queue=()=>VISITS.filter(v=>v.status==="계약대기"&&!v.calledDesk&&hasOurs(v)).sort((a,b)=>a.queueAt-b.queueAt);
+const inDesk=()=>VISITS.filter(v=>v.status==="계약대기"&&v.calledDesk&&hasOurs(v));
 const STEPS=["대기열·세대","품목 확인","고객정보 확인","출력·서명","결제·확정"];
 function renderSteps(){const el=$("#steps");if(!st.user||st.view!=="contract"){el.innerHTML="";return;}
   el.innerHTML=STEPS.map((s,i)=>`<button class="step ${i===st.step?"on":""} ${i<st.step?"done":""}" data-go="${i}" ${i>maxStep()?"disabled":""}><b>${i+1}</b>${s}</button>`).join("");
   $$("[data-go]").forEach(b=>b.onclick=()=>{st.step=+b.dataset.go;render();});}
 function maxStep(){if(!utype())return 0;if(!selected().length)return 1;if(!custOK())return 2;if(!st.printed)return 3;return 4;}
-const custOK=()=>st.cust.name.trim()&&/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(st.cust.phone.trim())&&(curVisit()||st.consent1)&&st.consent2;
+const custOK=()=>unitKey()&&st.cust.name.trim()&&/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(st.cust.phone.trim())&&(curVisit()||st.consent1)&&st.consent2;
 const payDone=p=>p&&((p.method==="card"&&p.done)||(p.method==="transfer"&&p.requested));
 const payOK=()=>Object.keys(byCompany()).every(co=>payDone(st.paid[co]));
-function callVisit(v){
-  Object.assign(st,blank());st.visitId=v.id;st.t0=Date.now();[st.dong,st.ho]=v.unit.split("-");
-  Object.entries(v.items).forEach(([c,it])=>{if(it.state==="sel")Object.assign(st.sel,it.opts);});
+async function callVisit(v){
+  if(!v)return;try{if(API)await syncPull();}catch(e){}
+  v=VISITS.find(x=>x.id===v.id)||v;
+  if(v.calledDesk&&v.calledDesk!==st.desk){toast(`이미 계약석 ${v.calledDesk}번에서 불렀습니다.`);render();return;}
+  v.calledDesk=st.desk;v.calledAt=Date.now();v.calledBy=st.user;
+  notifyServer(v,"call",`[옵션 행사] ${v.no?v.no+"번 ":""}고객님, ${st.desk}번 계약석으로 와 주세요.`);
+  Object.assign(st,blank());st.visitId=v.id;st.t0=Date.now();[st.dong,st.ho]=v.unit?v.unit.split("-"):["",""];
+  Object.entries(v.items).forEach(([c,it])=>{if(it.state==="sel"&&!isSS(c))Object.assign(st.sel,it.opts);});
   st.cust={name:v.name,phone:v.phone,birth:v.birth||"",addr:v.addr||"",addrDetail:v.addrDetail||"",zip:v.zip||"",cash:""};
-  st.step=1;render();window.scrollTo(0,0);toast(`${v.name}님(${unitLabel(v.unit)})을 계약석 ${st.desk}번으로 호출했습니다.`);
+  st.step=1;render();window.scrollTo(0,0);toast(`${v.no?v.no+"번 ":""}${v.name}님을 계약석 ${st.desk}번으로 호출했습니다.`);
 }
 function viewQueue(){
   const q=queue();const now=Date.now();
   return`<section class="panel"><span class="who staff">계약 실장</span><h2>계약석 대기열 ${q.length}세대</h2>
    <p class="hint">상담을 마친 세대가 순서대로 들어옵니다. 호출하면 세대·품목·고객정보가 모두 채워진 상태로 열립니다.</p>
-   ${q.length?`<div class="nav" style="margin:0 0 4px"><button class="btn" id="callNext">다음 고객 호출 · ${esc(q[0].name)} (${unitLabel(q[0].unit)})</button></div>`:""}
+   ${q.length?`<div class="nav" style="margin:0 0 4px"><button class="btn" id="callNext">다음 고객 호출 · ${q[0].no?q[0].no+"번 ":""}${esc(q[0].name)} (${unitLabel(q[0].unit)})</button></div>`:""}
    <div class="queue">${q.map((v,i)=>{const its=Object.values(v.items);const sel=its.filter(it=>it.state==="sel").length,th=its.filter(it=>it.state==="think").length;
-     return`<div class="qrow"><span class="qn">${i+1}</span><span><b>${esc(v.name)}</b> · ${unitLabel(v.unit)} ${v.type}<small>대기 ${Math.max(0,Math.round((now-v.queueAt)/60000))}분 · 선택 ${sel} · <span style="color:var(--accent);font-weight:600">고민 중 ${th}</span> · 상담 ${esc(v.consultant||"-")}${v.via==="staff"?" · 직원 입력":""}</small></span><button class="seg" data-call="${v.id}" style="padding:8px 14px">호출</button></div>`;}).join("")||'<p class="empty">대기 중인 세대가 없습니다.</p>'}</div>
+     return`<div class="qrow"><span class="qn">${i+1}</span><span>${noTag(v)}<b>${esc(v.name)}</b> · ${unitLabel(v.unit)} ${v.type}<small>대기 ${Math.max(0,Math.round((now-v.queueAt)/60000))}분 · 선택 ${sel} · <span style="color:var(--accent);font-weight:600">고민 중 ${th}</span> · 상담 ${esc(v.consultant||"-")}${v.via==="staff"?" · 직원 입력":""}</small></span><button class="seg" data-call="${v.id}" style="padding:8px 14px">호출</button></div>`;}).join("")||'<p class="empty">대기 중인 세대가 없습니다.</p>'}</div>
+   ${inDesk().length?`<h3 class="vh" style="margin-top:16px">계약석에서 진행 중</h3><div class="queue">${inDesk().map(v=>`<div class="qrow"><span class="qn">${v.calledDesk}</span><span>${noTag(v)}<b>${esc(v.name)}</b> · ${unitLabel(v.unit)}<small>계약석 ${v.calledDesk}번 · ${esc(v.calledBy||"")} · ${hhmm(v.calledAt||Date.now())} 호출</small></span>${v.calledDesk===st.desk?`<button class="seg" data-recall="${v.id}" style="padding:8px 14px">다시 열기</button>`:`<button class="seg" data-release="${v.id}" style="padding:8px 14px">대기로 되돌리기</button>`}</div>`).join("")}</div>`:""}
    <details style="margin-top:18px"><summary style="cursor:pointer;color:var(--muted);font-size:14px">방명록 없이 바로 계약 (세대 검색)</summary>
     <div class="field" style="margin-top:10px"><label for="u-one">동·호수 (숫자만)</label><input id="u-one" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="u-hit"></div></div>
     <div class="nav"><button class="btn sub" id="u-go">이 세대로 시작</button></div></details></section>`;
@@ -817,10 +888,10 @@ function sidePanel(){
   let up="";
   if(utype()&&st.step>=1&&st.step<=2){
     const chosen=new Set(sel.map(x=>x.cat.id));const think=v?Object.entries(v.items).filter(([c,it])=>it.state==="think").map(([c])=>c):[];
-    const rest=CATALOG.filter(c=>catOpts(c,utype()).length&&!chosen.has(c.id));
+    const rest=CATALOG.filter(c=>!isSS(c.id)&&catOpts(c,utype()).length&&!chosen.has(c.id));
     up=`<div class="upsell"><h3>추가 계약 안내</h3>${rest.map(c=>{const p=popularity(c.id,utype());return`<div class="u"><span>${esc(c.name)}${think.includes(c.id)?' <span class="chip think">고민 중</span>':""}</span>${p?`<span class="pop">${utype()} ${p.n}세대 중 ${p.hit}세대 (${p.pct}%)</span>`:'<span style="color:var(--muted);font-size:12px">인기도: 계약 '+S.popMin+'세대부터</span>'}</div>`;}).join("")||'<p class="empty" style="font-size:13px">해당 타입의 모든 품목을 선택했습니다.</p>'}</div>`;
   }
-  return`<aside class="panel side"><h2>${unitKey()?esc(unitLabel(unitKey())):"세대 미선택"}</h2><div class="hint">${utype()?utype()+" 타입":"대기열에서 호출하세요"}${v?" · 상담 "+esc(v.consultant||"-"):""}</div>
+  return`<aside class="panel side"><h2>${noTag(v)}${unitKey()?esc(unitLabel(unitKey())):(v?"동·호 미확정":"세대 미선택")}</h2><div class="hint">${utype()?utype()+" 타입":"대기열에서 호출하세요"}${v?" · 상담 "+esc(v.consultant||"-"):""}</div>
    ${lines||'<div class="empty">선택한 품목이 없습니다.</div>'}
    <div class="total"><span>계약 총액</span><span class="v num">${won(total)}</span></div>
    <div class="total" style="margin-top:4px"><span style="font-size:13px;color:var(--muted)">오늘 결제(계약금·일시납)</span><span class="num" style="font-weight:700">${won(todayAmt)}</span></div>
@@ -840,7 +911,8 @@ function viewItems(){
   ${thinkBox()}
   <p class="hint">${v?"상담에서 선택한 품목이 체크되어 있습니다. 고민 중 품목을 마지막으로 권하고, 바뀐 것만 고치세요.":t+" 타입 선택지만 보입니다."}</p>
   ${prev.length?`<div class="alert" style="margin-bottom:12px">이미 계약한 품목: ${prev.map(p=>esc(p.item)).join(", ")}. 추가 계약으로 진행됩니다.${prev[0].name&&v&&prev[0].name[0]!==v.name[0]?" · 기존 계약자와 이름이 다릅니다. 명의를 확인하세요.":""}</div>`:""}
-  ${CATALOG.map(c=>{const opts=catOpts(c,t);if(!opts.length)return"";const think=v&&v.items[c.id]&&v.items[c.id].state==="think";
+  ${v&&hasSS(v)?`<div class="badge-src" style="margin-bottom:10px">삼성: ${esc(Object.keys(v.items.SAM.opts||{}).map(id=>findOpt(id).opt.label).join(", ")||"고민 중")} — <b>삼성 계약석에서 별도 계약</b> (여기 계약서·결제에는 들어가지 않습니다)</div>`:""}
+  ${CATALOG.map(c=>{if(isSS(c.id))return"";const opts=catOpts(c,t);if(!opts.length)return"";const think=v&&v.items[c.id]&&v.items[c.id].state==="think";
    return`<div class="cat"><div class="cat-h"><h3>${esc(c.name)}</h3><span class="co">${esc(COMPANIES[c.co].name)}${c.multi?" · 복수 선택 가능":""}</span>${think?'<span class="chip think">고민 중</span>':""}</div>
    ${opts.map(o=>{const on=st.sel[o.id];return`<label class="opt ${on?"sel":""}"><input type="checkbox" data-opt="${o.id}" ${on?"checked":""}><span class="lbl">${esc(o.label)}</span><span class="price num">${won(o.price)}</span>${o.desc?`<span class="desc">${esc(o.desc)}</span>`:""}
      ${on?`<span class="pay"><button type="button" class="seg" data-pay="${o.id}:split" aria-pressed="${on==="split"}">분할 납부</button><button type="button" class="seg" data-pay="${o.id}:lump" aria-pressed="${on==="lump"}">일시납 ${won(lineAmt(o.price,c.id,"lump"))}</button></span>`:""}</label>`;}).join("")}</div>`;}).join("")}</section>`;
@@ -849,6 +921,7 @@ function viewCust(){
   const v=curVisit();const cos=Object.keys(byCompany()).map(c=>COMPANIES[c].name);
   const f=(id,l,ph,type="text",mode="")=>`<div class="field"><label for="c-${id}">${l}</label><input id="c-${id}" type="${type}" ${mode?`inputmode="${mode}"`:""} placeholder="${ph}" value="${esc(st.cust[id])}" autocomplete="off"></div>`;
   return`<section class="panel"><span class="who cust">고객 확인</span><h2>계약자 정보 확인</h2>
+  ${unitKey()?"":`<div class="alert">동·호수 미확정 — 계약서에 들어가므로 지금 확인해 주세요 (분양계약서·문자·가족 통화 등)</div><div class="row" style="align-items:end;gap:8px;margin:8px 0 14px"><div class="field" style="flex:1"><label for="c-unit">동·호수 (숫자만)</label><input id="c-unit" inputmode="numeric" placeholder="1011203"><div class="unit-hit" id="c-hit"></div></div><button class="btn sub" id="c-setunit">확정</button></div>`}
   ${v?`<div class="badge-src ${v.via==="staff"?"staff":""}">${v.via==="staff"?"직원이 대신 입력한 정보입니다. 고객과 소리 내어 한 번 더 확인하세요.":"방명록에서 고객이 직접 입력한 정보입니다. 확인만 하시면 됩니다."} (${esc(viaLabel(v))})</div>`:""}
   <p class="hint">방문자와 계약 명의가 다르면 이름·휴대폰을 고치세요. 출력 후 총괄표에 동·호수와 성명을 자필로 한 번 더 적습니다.</p>
   <div class="row">${f("name","성명 (계약자)","홍길동")}${f("phone","휴대폰","010-1234-5678","tel","tel")}</div>
@@ -913,7 +986,11 @@ function bindContract(){
   const uo=$("#u-one");if(uo)uo.oninput=()=>{const h=parseUnit(uo.value);$("#u-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
   const ug=$("#u-go");if(ug)ug.onclick=()=>{const h=parseUnit(uo.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}Object.assign(st,blank());[st.dong,st.ho]=h.split("-");st.t0=Date.now();st.step=1;render();};
   const cvb=$("#custView");if(cvb)cvb.onclick=()=>{st.custView=true;render();window.scrollTo(0,0);};
-  const tq=$("#toQueue");if(tq)tq.onclick=()=>{Object.assign(st,blank());render();};
+  const tq=$("#toQueue");if(tq)tq.onclick=()=>{const cv=curVisit();if(cv&&cv.status==="계약대기"){delete cv.calledDesk;delete cv.calledAt;}Object.assign(st,blank());render();};
+  $$("[data-recall]").forEach(b=>b.onclick=()=>{const v=VISITS.find(x=>x.id===b.dataset.recall);if(v){delete v.calledDesk;callVisit(v);}});
+  $$("[data-release]").forEach(b=>b.onclick=()=>{const v=VISITS.find(x=>x.id===b.dataset.release);if(v){delete v.calledDesk;delete v.calledAt;toast("대기열로 되돌렸습니다.");render();}});
+  const cun=$("#c-unit");if(cun)cun.oninput=()=>{const h=parseUnit(cun.value);$("#c-hit").textContent=h?`${unitLabel(h)} · ${UNITS[h]} 타입`:"";};
+  const csu=$("#c-setunit");if(csu)csu.onclick=()=>{const h=parseUnit(cun.value);if(!h){toast("세대 리스트에 있는 동·호수를 넣어 주세요.");return;}[st.dong,st.ho]=h.split("-");const v=curVisit();if(v){v.unit=h;if(!v.type)v.type=UNITS[h];}toast(`${unitLabel(h)}로 확정했습니다.`);render();};
   $$("[data-opt]").forEach(cb=>cb.onchange=()=>{const id=cb.dataset.opt;const{cat}=findOpt(id);if(cb.checked){if(!cat.multi)cat.opts.forEach(o=>delete st.sel[o.id]);st.sel[id]="split";}else delete st.sel[id];render();});
   $$("[data-pay]").forEach(b=>b.onclick=e=>{e.preventDefault();const[id,m]=b.dataset.pay.split(":");st.sel[id]=m;render();});
   ["name","phone","birth","cash","addrDetail"].forEach(k=>{const i=$("#c-"+k);if(i)i.oninput=()=>{st.cust[k]=i.value;refreshNav();};});
@@ -933,13 +1010,14 @@ function bindContract(){
 }
 /* ===== v6.8 상담 확인서: 계약석에서 고객과 최종 결정을 하는 종이 (계약서 아님, 고객에게 드림) ===== */
 function ckData(){const v=curVisit();const t=utype();const sel=[],think=[],no=[];
-  CATALOG.filter(c=>catOpts(c,t).length).forEach(c=>{const ids=Object.keys(st.sel).filter(id=>findOpt(id).cat.id===c.id);const it=v&&v.items[c.id];const memo=(it&&it.memo)||"";
+  CATALOG.filter(c=>!isSS(c.id)&&catOpts(c,t).length).forEach(c=>{const ids=Object.keys(st.sel).filter(id=>findOpt(id).cat.id===c.id);const it=v&&v.items[c.id];const memo=(it&&it.memo)||"";
     if(ids.length)sel.push({c,lines:ids.map(id=>({o:findOpt(id).opt,m:st.sel[id]})),memo});
     else if(it&&it.state==="think")think.push({c,pick:Object.keys(it.opts||{}),memo});
     else no.push({c});});
   return{v,t,sel,think,no};}
 function ckSheetHTML(){
   const{v,t,sel,think}=ckData();const c=st.cust;
+  const ssl=v&&hasSS(v)?(()=>{const it=v.items.SAM;const ids=Object.keys(it.opts||{});return ids.length?ids.map(id=>{const o=findOpt(id).opt;return`<tr><td><b>${esc(o.label)}</b>${it.state==="think"?" (고민 중)":""}</td><td class="r">${won(o.price)}</td></tr>`;}).join(""):`<tr><td colspan="2">고민 중</td></tr>`;})():"";
   const L=[];sel.forEach(s=>s.lines.forEach(l=>L.push({c:s.c,...l,sc:schedule(l.o.price,s.c.id,l.m),amt:lineAmt(l.o.price,s.c.id,l.m)})));
   const sp=L.filter(x=>x.m!=="lump"),lp=L.filter(x=>x.m==="lump");
   const spDep=sp.reduce((a,x)=>a+x.sc[0].amt,0),lpTotal=lp.reduce((a,x)=>a+x.amt,0),total=L.reduce((a,x)=>a+x.amt,0);
@@ -962,12 +1040,13 @@ function ckSheetHTML(){
   .after{margin-top:6px;font-size:10pt;color:#555}.sch{border:1.5px solid #111}.sch th,.sch td{border:1px solid #999}.sch th{background:#f2f2f2;border-bottom:1px solid #999}.sch td{font-size:15pt;font-weight:700;font-variant-numeric:tabular-nums;padding:10px 6px}.sch td.tt{background:#f2f2f2}
   .think{margin-top:26px;border:1.5px dashed #999;border-radius:8px;padding:4px 14px 8px}.think h2{margin:8px 0 2px;color:#8a5a00}.think td{border-bottom:1px dotted #ccc}.think td:first-child{white-space:nowrap;width:1%;padding-right:18px}
   .foot{margin-top:18px;font-size:9.5pt;color:#666}`;
-  const body=`<div class="top"><div><h1>상담 확인서</h1><div style="font-size:11pt;color:#555">${esc(S.siteName)} · ${today()}</div></div><div class="who"><b>${unitKey()?esc(unitLabel(unitKey())):"-"}</b>${esc(c.name||"")} 님 · ${esc(t)} 타입</div></div>
+  const body=`<div class="top"><div><h1>상담 확인서${v&&v.no?` <span style="font-size:15pt;border:2px solid #111;border-radius:6px;padding:0 8px;vertical-align:middle">${v.no}번</span>`:""}</h1><div style="font-size:11pt;color:#555">${esc(S.siteName)} · ${today()}</div></div><div class="who"><b>${unitKey()?esc(unitLabel(unitKey())):"-"}</b>${esc(c.name||"")} 님 · ${esc(t)} 타입</div></div>
   <h2>선택 품목</h2>
   ${L.length?`<table><tr><th>품목</th><th>선택</th><th class="c">납부</th><th class="r">금액 (원)</th></tr>${rows}<tr class="tot"><td colspan="3">합계</td><td class="r">${won(total)}</td></tr></table>`:'<p>선택한 품목이 없습니다.</p>'}
   ${L.length?`<div class="pay"><div class="bx"><span>분할 품목 계약금 (${S.stages[0].ratio}%)</span><b>${won(spDep)}</b></div><div class="op">+</div><div class="bx"><span>일시납 품목 (${S.lumpDiscount}% 할인)</span><b>${won(lpTotal)}</b></div><div class="op">=</div><div class="bx today"><span>오늘 결제하실 금액</span><b>${won(spDep+lpTotal)}</b></div></div>
   <h2>납부 일정</h2><table class="sch"><tr><th class="c">계약 시 (오늘)</th>${later.map(s=>`<th class="c">${esc(s.name)} (${s.ratio}%)</th>`).join("")}<th class="c">총 계약금액</th></tr><tr><td class="c">${won(spDep+lpTotal)}</td>${later.map(s=>`<td class="c">${won(s.amt)}</td>`).join("")}<td class="c tt">${won(total)}</td></tr></table><div class="after">중도금·잔금은 분할 납부 품목에만 해당합니다. 일시납 품목은 계약 시 전액 결제합니다.</div>`:""}
   ${think.length?`<div class="think"><h2>고민 중인 품목</h2><table>${thRows}</table></div>`:""}
+  ${ssl?`<div class="think" style="border-color:#555"><h2 style="color:#333">삼성가전 — 삼성 계약석에서 별도 계약</h2><table>${ssl}</table><div class="sub" style="margin:4px 0">위 금액은 이 확인서의 합계·납부 일정에 포함되지 않습니다.</div></div>`:""}
   <div class="foot">상담 내용 확인용이며 계약서가 아닙니다. 표시 금액은 VAT 포함입니다.</div>`;
   return`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>상담 확인서 ${unitKey()?esc(unitLabel(unitKey())):""}</title><style>${css}</style></head><body>${body}<script>(function(){var m=271/25.4*96,h=document.body.scrollHeight;if(h>m)document.body.style.zoom=Math.max(.78,(m-6)/h).toFixed(3);})();<\/script></body></html>`;}
 function printCheckSheet(){
@@ -988,6 +1067,17 @@ function saveContract(){
 }
 
 
+/* ===== v7.1 삼성 계약석: 체크리스트에서 삼성을 고른 세대 목록 (계약은 삼성이 직접) ===== */
+function viewSamsung(){
+  const list=VISITS.filter(v=>v.date===visitDay()&&hasSS(v)&&["계약대기","계약","미결정","상담중"].includes(v.status)).sort((a,b)=>(a.queueAt||a.at)-(b.queueAt||b.at));
+  const st_=v=>(v.samsung&&v.samsung.status)||"대기";
+  const n=s=>list.filter(v=>st_(v)===s).length;
+  return`<section class="panel"><span class="who staff">삼성 계약석</span><h2>삼성 상담 세대 ${list.length}세대</h2>
+   <p class="hint">상담 실장이 체크리스트에서 삼성 품목을 고른 세대입니다. 계약은 삼성에서 직접 하고, 끝나면 [계약 완료]만 눌러 주세요. · 대기 ${n("대기")} · 완료 ${n("완료")} · 안 함 ${n("안 함")}</p>
+   <div class="queue">${list.map(v=>{const it=v.items.SAM;const labs=Object.keys(it.opts||{}).map(id=>findOpt(id).opt.label);const s=st_(v);
+     return`<div class="qrow"><span>${noTag(v)}<b>${esc(v.name)}</b> · ${unitLabel(v.unit)} ${v.type||""}<small>${esc(v.phone||"")} · ${it.state==="think"?"고민 중":"선택"}: ${esc(labs.join(", ")||"-")}${it.memo?" · 메모: "+esc(it.memo):""} · 상담 ${esc(v.consultant||"-")}</small></span>
+      <span class="row" style="gap:6px">${["대기","완료","안 함"].map(k=>`<button class="seg" data-ss="${v.id}:${k}" aria-pressed="${s===k}" style="padding:8px 12px">${k==="완료"?"계약 완료":k}</button>`).join("")}</span></div>`;}).join("")||'<p class="empty">아직 삼성 품목을 고른 세대가 없습니다.</p>'}</div></section>`;}
+function bindSamsung(){$$("[data-ss]").forEach(b=>b.onclick=()=>{const[id,k]=b.dataset.ss.split(":");const v=VISITS.find(x=>x.id===id);if(!v)return;v.samsung={status:k,at:Date.now(),by:st.user};if(k==="완료"&&!hasOurs(v)&&v.status==="계약대기")v.status="계약";render();});}
 /* ===== 고객 보기: 내부 정보(상담 메모·대기열·실장) 없이 고객에게 보여주는 화면 ===== */
 function viewCustomer(){
   const t=utype();const sel=selected();const chosen=new Set(sel.map(x=>x.cat.id));
@@ -1263,10 +1353,10 @@ function bindSettings(){
   $$("[data-stx]").forEach(b=>b.onclick=()=>{S.staff.splice(+b.dataset.stx,1);render();});$("#addStaff").onclick=()=>{S.staff.push({name:"새 직원",pin:"9999",role:"계약"});render();};
   $$("[data-ex]").forEach(i=>i.onchange=e=>{const v=e.target.value;if(v==="")delete S.itemDeposit[i.dataset.ex];else S.itemDeposit[i.dataset.ex]=+v;});
 }
-if(new URLSearchParams(location.search).has("guest")){st.guestMode=true;st.guestOnly=true;}
+{const qs=new URLSearchParams(location.search);if(qs.has("guest")){st.guestMode=true;st.guestOnly=true;}
+ if(qs.has("me")){st.meMode=true;st.guestOnly=true;st.meId=qs.get("me");st.meTok=qs.get("t")||"";}}
 if(!API)seedSample();
-initSync();
-render();
+if(st.meMode){render();if(API){loadMe();setInterval(loadMe,8000);}else{st.me={ok:false,err:"notfound"};render();}}else{initSync();render();}
 </script>
 
 <script>
