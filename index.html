@@ -445,6 +445,29 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .cv-opt.hot{border:2px solid var(--accent);background:var(--accent-soft)}
 .cv-opt small{font-size:12px;color:var(--muted)}
 
+/* ===== v7.4 자동 출력 ===== */
+.proute{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.proute>span{font-size:13px;color:var(--muted);margin-right:4px}
+.proute .seg{padding:8px 12px}
+.proute small{flex-basis:100%;color:var(--warn);font-size:13px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#c3c8d2;margin-left:7px;vertical-align:middle}
+.dot.on{background:var(--ok)}
+.jobline{margin-top:10px;padding:11px 14px;border-radius:10px;font-size:15px;border:1px solid var(--line);background:#fff}
+.jobline small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.jobline.wait{border-color:var(--navy);background:var(--navy-soft);color:var(--navy)}
+.jobline.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.jobline.bad{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
+.stn-big{margin-top:14px;padding:22px 18px;border-radius:12px;font-size:22px;font-weight:700;text-align:center;border:2px solid var(--line)}
+.stn-big.ready{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.stn-big.work{border-color:var(--navy);background:var(--navy-soft);color:var(--navy)}
+.stn-big.off{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
+.paper .jobmark{font-size:7.5pt;border:1px dashed #555;padding:0 5px;white-space:nowrap}
+@media screen{#stnPapers{position:absolute;left:-10000px;top:0;width:210mm}}
+@media print{
+ .noprint{display:none !important}
+ body.stn-mode .wrap{display:none !important}
+ #stnPapers{position:static;width:auto}
+}
 @page{size:A4;margin:8mm}
 @media print{
  html,body{background:#fff !important}
@@ -468,7 +491,7 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.3 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -491,12 +514,14 @@ const S = {
     ...[1,2,3].map(n=>({name:"계약 "+n+"번",pin:"100"+n,role:"계약",no:n})),
     {name:"안내 1번",pin:"5555",role:"안내",no:1},
     {name:"관리 최종태",pin:"0000",role:"관리"},{name:"관리 최정은",pin:"0001",role:"관리"},
-    {name:"삼성",pin:"7777",role:"삼성"}],
+    {name:"삼성",pin:"7777",role:"삼성"},
+    /* v7.4: 프린터 옆에 켜 두는 출력 담당 PC */
+    {name:"출력 A",pin:"9001",role:"출력",stn:"A"},{name:"출력 B",pin:"9002",role:"출력",stn:"B"}],
   desks:3, printMode:"B"
 };
-const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","samsung","status","ledger","settings"],삼성:["samsung"]};
+const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","samsung","status","ledger","settings"],삼성:["samsung"],출력:["station"]};
 const ROLE_LABEL={안내:"입구 안내",상담:"상담 실장",계약:"계약석",관리:"관리",삼성:"삼성 계약석"};
-const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",samsung:"삼성",status:"계약 현황",ledger:"관리대장",settings:"현장 설정"};
+const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",samsung:"삼성",status:"계약 현황",ledger:"관리대장",settings:"현장 설정",station:"출력 담당"};
 const PRINT={
  A:{name:"감압지 2매 1조",print:"감압지에 1세트 인쇄 (윗장 주관사 보관용 · 아랫장 고객용)",sign:"한 번 쓰면 아랫장에 전사됩니다",receipt:"윗장·아랫장",tag:"2매 1조 · 윗장 주관사 / 아랫장 고객"},
  B:{name:"일반용지 2부 (한 번에)",print:"일반 용지에 고객용·보관용 2부가 한 번에 인쇄됩니다",sign:"고객용과 보관용에 각각 서명합니다",receipt:"고객용·보관용 2부",tag:"고객용 / 보관용"},
@@ -680,7 +705,7 @@ function numberSample(){const by={};VISITS.slice().sort((a,b)=>a.at-b.at).forEac
 
 /* ===== 상태 ===== */
 const blank=()=>({amend:null,reprint:null,ptest:false,forceType:"",cdate:"",step:0,dong:"",ho:"",sel:{},cust:{name:"",phone:"",birth:"",addr:"",addrDetail:"",zip:"",cash:""},consent1:false,consent2:false,paid:{},addrOpen:false,addrQ:"",printed:false,signedPhoto:false,custView:false,visitId:null,t0:null});
-const st={view:"guest",user:null,role:null,desk:1,pin:"",pick:"",statusDay:"all",cv:null,guestMode:false,gdone:false,
+const st={view:"guest",user:null,role:null,desk:1,pin:"",pick:"",statusDay:"all",cv:null,guestMode:false,gdone:false,stn:"A",stnAuto:true,
   g:{unit:"",unknown:false,name:"",phone:"",addr:"",zip:"",addrDetail:"",c1:false,c2:false,mode:"self",paperNo:""},...blank()};
 const unitKey=()=>st.dong&&st.ho?st.dong+"-"+st.ho:"";
 const utype=()=>{if(st.forceType)return st.forceType;const v=VISITS.find(x=>x.id===st.visitId);return (v&&v.unit===unitKey()&&v.type)||UNITS[unitKey()]||"";};
@@ -708,7 +733,8 @@ function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 let API=lsGet("oc_api")||DEFAULT_API;
 function syncRecs(){const o=[];
   VISITS.forEach(v=>o.push(["visits",v.id,v]));LEDGER.forEach(r=>o.push(["ledger",r.id,r]));HIST.forEach(h=>o.push(["hist",h.id,h]));
-  Object.keys(ORIG).forEach(u=>o.push(["meta","ORIG:"+u,{k:"ORIG",u,v:ORIG[u]}]));Object.keys(OWNER).forEach(u=>o.push(["meta","OWNER:"+u,{k:"OWNER",u,v:OWNER[u]}]));return o;}
+  Object.keys(ORIG).forEach(u=>o.push(["meta","ORIG:"+u,{k:"ORIG",u,v:ORIG[u]}]));Object.keys(OWNER).forEach(u=>o.push(["meta","OWNER:"+u,{k:"OWNER",u,v:OWNER[u]}]));
+  Object.keys(JOBS).forEach(id=>o.push(["meta","JOB:"+id,{k:"JOB",u:id,v:JOBS[id]}]));Object.keys(STN).forEach(u=>o.push(["meta","STN:"+u,{k:"STN",u,v:STN[u]}]));return o;}
 function syncSummary(c,d){if(c==="visits")return`${d.unit||"동호 미정"} ${d.name} · ${d.status}`;if(c==="ledger")return`${d.unit} ${d.item} · ${won(d.amount)} · ${d.status}`;if(c==="hist")return`${d.unit} ${d.kind} · ${(d.text||"").split("\n")[0]}`;return`${d.k} ${d.u}`;}
 function scanDirty(){if(!API)return;syncRecs().forEach(([c,id,d])=>{const k=c+"|"+id,j=JSON.stringify(d);if(SYNC.hash[k]!==j){SYNC.hash[k]=j;SYNC.pending[k]={col:c,id,data:d,by:st.user||"고객",summary:syncSummary(c,d)};SYNC.ack[k]=Infinity;}});
   lsSet("oc_pending",JSON.stringify(SYNC.pending));}
@@ -721,7 +747,7 @@ function syncApply(c,id,d){
   if(c==="visits"){const i=VISITS.findIndex(x=>x.id===id);if(i>=0)VISITS[i]=d;else VISITS.push(d);}
   else if(c==="ledger"){const i=LEDGER.findIndex(x=>x.id===id);if(i>=0)LEDGER[i]=d;else LEDGER.push(d);}
   else if(c==="hist"){const i=HIST.findIndex(x=>x.id===id);if(i>=0)HIST[i]=d;else HIST.push(d);}
-  else if(c==="meta"){if(d.k==="ORIG")ORIG[d.u]=d.v;if(d.k==="OWNER")OWNER[d.u]=d.v;}}
+  else if(c==="meta"){if(d.k==="ORIG")ORIG[d.u]=d.v;if(d.k==="OWNER")OWNER[d.u]=d.v;if(d.k==="JOB")JOBS[d.u]=d.v;if(d.k==="STN")STN[d.u]=d.v;}}
 /* v6.7: 응답 없이 멈춘 요청은 정해진 시간 뒤 끊는다 (멈춘 요청 하나가 이후 동기화를 막지 않게) */
 function fetchT(url,opt,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,Object.assign({},opt||{},{signal:c.signal})).finally(()=>clearTimeout(t));}
 function syncPull(){if(!API||st.guestOnly)return Promise.resolve();if(SYNC.pullP)return SYNC.pullP;
@@ -729,9 +755,11 @@ function syncPull(){if(!API||st.guestOnly)return Promise.resolve();if(SYNC.pullP
 /* v6.5: 버튼을 누르기 전에 출발한 가져오기 결과가 방금 바꾼 기록을 옛 값으로 덮지 않게 한다 */
 async function syncPullOnce(){const t0=Date.now();let skipped=false;
   try{const r=await fetchT(API+(API.includes("?")?"&":"?")+"since="+Math.max(0,SYNC.last-30000),{},10000).then(x=>x.json());if(!r.ok)throw 0;
-    if(r.resetAt&&r.resetAt>SYNC.resetAt){if(SYNC.loaded){VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);SYNC.hash={};SYNC.pending={};SYNC.ack={};SYNC.dirtyRender=true;}SYNC.resetAt=r.resetAt;}
-    let changed=false;
-    r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);if(SYNC.pending[k]){skipped=true;return;}if(SYNC.ack[k]!=null){if(t0<=SYNC.ack[k]){skipped=true;return;}if(t0-SYNC.ack[k]>60000)delete SYNC.ack[k];}if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);changed=true;});
+    if(r.resetAt&&r.resetAt>SYNC.resetAt){if(SYNC.loaded){VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);[JOBS,STN,STN_T,JOB_T].forEach(o=>Object.keys(o).forEach(k=>delete o[k]));SYNC.hash={};SYNC.pending={};SYNC.ack={};SYNC.dirtyRender=true;}SYNC.resetAt=r.resetAt;}
+    let changed=false;if(r.now)SRV_OFF=r.now-Date.now();
+    r.rows.forEach(x=>{const k=x.col+"|"+x.id,j=JSON.stringify(x.data);
+      if(x.col==="meta"&&x.data){if(x.data.k==="STN")STN_T[x.data.u]=x.t;if(x.data.k==="JOB")JOB_T[x.data.u]=x.t;}
+      if(SYNC.pending[k]){skipped=true;return;}if(SYNC.ack[k]!=null){if(t0<=SYNC.ack[k]){skipped=true;return;}if(t0-SYNC.ack[k]>60000)delete SYNC.ack[k];}if(SYNC.hash[k]===j)return;SYNC.hash[k]=j;syncApply(x.col,x.id,x.data);if(!(x.col==="meta"&&x.data&&x.data.k==="STN"))changed=true;});
     if(!skipped)SYNC.last=r.now;SYNC.loaded=true;SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";
     if(changed||SYNC.dirtyRender)syncRender();
   }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}syncBadge();}
@@ -746,16 +774,206 @@ function initSync(){
   try{const p=JSON.parse(lsGet("oc_pending")||"{}");Object.assign(SYNC.pending,p);}catch(e){}
   if(!st.guestOnly){syncPull();setInterval(()=>{syncPull().then(syncPush);},4000);}else setInterval(syncPush,4000); /* v6.5: 고객 화면도 못 보낸 기록을 4초마다 다시 보냄 */
   setInterval(()=>{if(SYNC.dirtyRender)syncRender();syncBadge();},1500);
+  /* v7.4: 출력 요청을 보낸 뒤 결과를 기다리는 동안에는 더 자주 확인한다 */
+  setInterval(()=>{if(!st.guestOnly&&!isStn()&&Object.values(JOBS).some(j=>j.dev===DEV&&(j.s==="req"||j.s==="got")&&Date.now()-j.at<90000))syncPull();},1500);
   document.addEventListener("focusout",()=>setTimeout(()=>{if(SYNC.dirtyRender)syncRender();},50));
 }
 setInterval(()=>{if(st.user&&["consult","guest"].includes(st.view)&&!st.custView)syncRender();},30000); /* 대기 분 표시 갱신 */
-function afterRender(){if(!API)return;scanDirty();syncPush();syncBadge();}
+function afterRender(){if(!API)return;jobSweep();scanDirty();syncPush();syncBadge();}
+
+/* ===== v7.4 자동 출력 =====
+ * 계약석 태블릿은 '출력 요청'만 보내고, 프린터 옆에 켜 둔 PC(출력 담당)가 받아서 Windows 기본 프린터로 뽑는다.
+ * 요청과 상태는 meta 시트에 JOB:<id>, 출력 PC가 살아 있다는 신호는 STN:<A|B> 로 오간다 (서버 코드는 그대로).
+ * 시각 비교는 기기 시계가 아니라 서버가 적어 준 수정 시각으로 한다 (기기마다 시계가 달라도 틀리지 않게). */
+const JOBS={}, STN={}, STN_T={}, JOB_T={};
+let SRV_OFF=0, STNSIG="";
+const DEV=(()=>{let d=lsGet("oc_dev");if(!d){d="d"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);lsSet("oc_dev",d);}return d;})();
+const srvNow=()=>Date.now()+SRV_OFF;
+const isStn=()=>!!st.user&&st.role==="출력";
+const stnOther=u=>u==="A"?"B":"A";
+const stnAlive=u=>!!API&&!!STN[u]&&STN[u].auto!==false&&!!STN_T[u]&&srvNow()-STN_T[u]<65000;
+/* 이 기기에서 고른 보낼 곳: ""(자동) | "A" | "B" | "here"(이 태블릿에서 직접). "here"는 새로고침하면 자동으로 돌아간다 */
+let PTO=lsGet("oc_pto")||"";
+function printRoute(){
+  if(PTO==="here")return{to:null};
+  const pref=PTO||((st.desk===3||st.desk===9)?"B":"A");
+  return{to:[pref,stnOther(pref)].find(stnAlive)||null,pref};
+}
+const jobKey=()=>`${unitKey()}|${st.t0||0}|${st.ptest?"T":st.reprint?"R":st.amend?"A":"C"}`;
+const myJobs=()=>Object.values(JOBS).filter(j=>j.dev===DEV&&j.key===jobKey()).sort((a,b)=>b.at-a.at);
+const jobSnap=()=>JSON.parse(JSON.stringify({amend:st.amend,reprint:st.reprint,ptest:st.ptest,forceType:st.forceType,cdate:st.cdate,dong:st.dong,ho:st.ho,sel:st.sel,cust:st.cust,consent1:st.consent1,consent2:st.consent2,paid:st.paid,visitId:st.visitId,t0:st.t0}));
+/* 출력 요청 보내기. solo = 한 장만 뽑을 때 그 장의 순서(0부터), 전체면 null */
+function sendJob(solo,to,force){
+  solo=solo==null?null:solo;const last=myJobs()[0];
+  /* 같은 버튼을 연달아 눌러 두 번 나오는 것을 막는다 */
+  if(!force&&last&&last.solo===solo&&last.to===to&&(last.s==="req"||last.s==="got")&&Date.now()-last.at<4000){toast("이미 보냈습니다. 잠시만 기다려 주세요.");return null;}
+  myJobs().forEach(j=>{if(j.s==="req")j.s="cancel";});
+  const id=uid("J");
+  JOBS[id]={id,at:Date.now(),dev:DEV,desk:st.desk,by:st.user,to,s:"req",solo,n:solo==null?printDocs().length:1,unit:unitKey(),key:jobKey(),p:jobSnap()};
+  return JOBS[id];
+}
+/* 계약을 마쳤거나 화면을 떠났으면, 이 기기가 보낸 요청에서 계약자 정보를 지운다 (아직 안 나간 요청은 취소) */
+function jobSweep(){
+  if(st.role==="출력")return;const key=st.user&&unitKey()?jobKey():null;
+  Object.values(JOBS).forEach(j=>{if(j.dev!==DEV||j.key===key)return;if(j.s==="req")j.s="cancel";if(j.p&&j.s!=="got")j.p=null;});
+}
+function routeHtml(){
+  if(!API)return"";
+  if(!Object.keys(STN).length&&PTO!=="A"&&PTO!=="B")return""; /* 출력 PC를 한 번도 켠 적 없는 현장은 예전 화면 그대로 */
+  const r=printRoute();const cur=r.to||"here";
+  const b=(k,l)=>`<button type="button" class="seg" data-pto="${k}" aria-pressed="${cur===k}">${l}${k!=="here"?`<i class="dot ${stnAlive(k)?"on":""}"></i>`:""}</button>`;
+  return`<div class="proute"><span>출력 보낼 곳</span>${b("A","프린터 A")}${b("B","프린터 B")}${b("here","이 태블릿에서 직접")}
+   ${r.to||PTO==="here"?"":`<small>켜져 있는 출력 PC가 없어 이 태블릿에서 직접 인쇄합니다.</small>`}</div>`;
+}
+function jobLineHtml(){
+  const j=myJobs()[0];if(!j||j.s==="cancel")return"";
+  const age=Math.round((Date.now()-j.at)/1000);const P="프린터 "+j.to;const o=stnOther(j.to);
+  const alt=`<div class="row" style="gap:6px;margin-top:8px">${stnAlive(o)?`<button type="button" class="seg" data-resend="${o}">프린터 ${o}로 다시 보내기</button>`:""}<button type="button" class="seg" id="printHere">이 태블릿에서 직접 인쇄</button></div>`;
+  const what=j.solo==null?j.n+"장":"1장";
+  if(j.s==="req")return age<20?`<div class="jobline wait"><b>${P}로 보냈습니다 (${what})</b> · 받는 중… ${age}초</div>`
+    :`<div class="jobline bad"><b>${P} 옆 출력 PC가 ${age}초째 받지 않습니다.</b> PC가 켜져 있는지 확인하거나 아래 버튼으로 뽑으세요.${alt}</div>`;
+  if(j.s==="got")return age<75?`<div class="jobline wait"><b>${P}에서 인쇄 중입니다 (${what})</b> · ${age}초</div>`
+    :`<div class="jobline bad"><b>${P}가 인쇄 중 표시에서 멈췄습니다.</b> 종이가 나왔는지 보고, 안 나왔으면 아래 버튼으로 뽑으세요.${alt}</div>`;
+  if(j.s==="done")return`<div class="jobline ok"><b>${P}에서 출력했습니다 (${what})</b> · ${hhmm(j.at)}<small>종이가 안 나왔으면 프린터 용지·걸림을 확인한 뒤 [다시 인쇄]를 누르세요.</small></div>`;
+  return`<div class="jobline bad"><b>${P}에서 출력하지 못했습니다.</b>${j.err?" ("+esc(j.err)+")":""}${alt}</div>`;
+}
+function bindJobLine(){
+  $$("[data-resend]").forEach(b=>b.onclick=()=>{const j=myJobs()[0];if(!j)return;if(sendJob(j.solo,b.dataset.resend,true)){render();toast(`프린터 ${b.dataset.resend}로 다시 보냈습니다.`);}});
+  const ph=$("#printHere");if(ph)ph.onclick=()=>{const j=myJobs()[0];if(j&&j.s==="req")j.s="cancel";afterRender();doPrint(j?j.solo:null);};
+}
+function bindRoute(){
+  $$("[data-pto]").forEach(b=>b.onclick=()=>{PTO=b.dataset.pto;lsSet("oc_pto",PTO==="here"?"":PTO);render();});
+  bindJobLine();
+}
+/* 출력 단계에 있는 동안: 상태 줄을 1초마다 고치고, 출력 PC가 켜지거나 꺼지면 화면을 다시 그린다 */
+setInterval(()=>{
+  if(!st.user||st.view!=="contract"||st.step!==3||st.custView)return;
+  const el=$("#jobLine");if(el){const h=jobLineHtml();if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;bindJobLine();}}
+  const sig=(stnAlive("A")?"A":"")+(stnAlive("B")?"B":"");if(sig!==STNSIG){STNSIG=sig;syncRender();}
+},1000);
+
+/* ----- 출력 담당 PC ----- */
+const STNRUN={on:false,busy:false,seen:{},cur:null,dup:false,since:0,wake:null,lastMs:null};
+function stnHost(){let h=$("#stnPapers");if(!h){h=document.createElement("div");h.id="stnPapers";h.className="papers";document.body.appendChild(h);}return h;}
+function stnBeat(){
+  if(!isStn()||!API)return;const o=STN[st.stn];
+  /* 같은 프린터 담당으로 PC 두 대가 켜지면 같은 계약서가 두 번 나온다. 나중에 켠 쪽이 멈춘다 */
+  if(o&&o.dev&&o.dev!==DEV&&STN_T[st.stn]&&srvNow()-STN_T[st.stn]<65000&&(o.since||0)<=STNRUN.since){if(!STNRUN.dup){STNRUN.dup=true;if(st.view==="station")render();}return;}
+  STNRUN.dup=false;STN[st.stn]={at:Date.now(),by:st.user,auto:st.stnAuto!==false,dev:DEV,since:STNRUN.since};scanDirty();syncPush();
+}
+async function stnWake(){
+  try{if(navigator.wakeLock&&!document.hidden&&!STNRUN.wake){const w=await navigator.wakeLock.request("screen");STNRUN.wake=w;w.addEventListener("release",()=>{STNRUN.wake=null;if(isStn()&&st.view==="station"&&!STNRUN.busy)render();});}}catch(e){STNRUN.wake=null;}
+  if(isStn()&&st.view==="station"&&!STNRUN.busy)render();
+}
+document.addEventListener("visibilitychange",()=>{if(isStn()&&!document.hidden)stnWake();});
+function stnClean(){
+  Object.values(JOBS).forEach(j=>{if(j.to!==st.stn||!JOB_T[j.id])return;const age=srvNow()-JOB_T[j.id];
+    if(j.p&&["done","fail","cancel"].includes(j.s)&&age>600000)j.p=null;              /* 계약자 정보는 10분 뒤 지운다 */
+    if(j.s==="got"&&age>180000&&!(STNRUN.cur&&STNRUN.cur.id===j.id)){j.s="fail";j.err="인쇄 중 멈춤";}});
+  scanDirty();syncPush();
+}
+function stnEnsure(){
+  if(STNRUN.on)return;STNRUN.on=true;STNRUN.since=Date.now();document.body.classList.add("stn-mode");stnWake();setTimeout(stnWarm,600);
+  let n=0,started=false;
+  const tick=()=>{if(!isStn())return;n++;stnTick();
+    if(n%4===0&&API)syncPull().then(()=>{syncPush();stnTick();});
+    if(n%40===2)stnBeat();
+    if(n%120===0)stnClean();};
+  const plain=()=>{if(!started){started=true;setInterval(tick,500);}};
+  /* 창이 가려져도 느려지지 않게 별도 타이머(워커)로 돌린다. 안 되면 보통 타이머로 */
+  try{const w=new Worker(URL.createObjectURL(new Blob(["setInterval(()=>postMessage(0),500)"],{type:"text/javascript"})));w.onmessage=()=>{started=true;tick();};w.onerror=plain;setTimeout(()=>{if(!started)plain();},2500);}catch(e){plain();}
+}
+function stnTick(){
+  if(!isStn()||st.view!=="station"||STNRUN.busy||STNRUN.dup||st.stnAuto===false)return;
+  const j=Object.values(JOBS).filter(x=>x.s==="req"&&x.to===st.stn&&x.p&&!STNRUN.seen[x.id]).sort((a,b)=>(JOB_T[a.id]||a.at)-(JOB_T[b.id]||b.at))[0];
+  if(!j)return;
+  /* PC를 늦게 켰을 때 한참 전 요청이 쏟아져 나오지 않게, 3분 넘은 요청은 뽑지 않는다 */
+  if(JOB_T[j.id]&&srvNow()-JOB_T[j.id]>180000){STNRUN.seen[j.id]=1;j.s="fail";j.err="3분 넘게 받지 못함";j.p=null;scanDirty();syncPush();return;}
+  stnPrint(j,false);
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* 요청 내용으로 계약서를 그린다. 양식은 st(계약석 상태)를 보고 그려지므로, 잠깐 요청 내용으로 바꿔 그린 뒤 바로 되돌린다 */
+function stnDraw(j){
+  const keep={};Object.keys(blank()).forEach(k=>keep[k]=st[k]);const ku=st.user,kd=st.desk;let docs=[];
+  try{Object.assign(st,blank(),JSON.parse(JSON.stringify(j.p)),{user:j.by,desk:j.desk});docs=printDocs();}
+  finally{Object.assign(st,keep,{user:ku,desk:kd});}
+  const host=stnHost();
+  host.innerHTML=docs.map((d,i)=>`<div class="pwrap ${j.solo===i?"on":""}">${d.h}</div>`).join("");
+  const mark=`${j.by} · ${hhmm(Date.now())}`;
+  host.querySelectorAll(".p-top").forEach(e=>{const m=document.createElement("span");m.className="jobmark";m.textContent=mark;e.insertBefore(m,e.children[1]||null);});
+  void host.offsetHeight;return docs;
+}
+/* 처음 켰을 때 한 번 미리 그려서 글꼴을 받아 둔다 (첫 계약서가 늦게 나오거나 글자 폭이 달라지지 않게) */
+async function stnWarm(){
+  if(STNRUN.busy)return;STNRUN.busy=true;
+  try{stnDraw(stnTestJob(null));if(document.fonts&&document.fonts.ready)await Promise.race([document.fonts.ready,sleep(4000)]);}catch(e){}
+  finally{const h=$("#stnPapers");if(h)h.innerHTML="";STNRUN.busy=false;}
+}
+async function stnPrint(j,manual){
+  if(STNRUN.busy||!j||!j.p)return;
+  STNRUN.busy=true;STNRUN.seen[j.id]=1;STNRUN.cur=j;
+  try{
+    if(!manual){j.s="got";j.stn=st.stn;scanDirty();syncPush();}
+    if(st.view==="station")render();
+    const docs=stnDraw(j);
+    document.body.classList.remove("print-qr");document.body.classList.toggle("solo",j.solo!=null);
+    if(document.fonts&&document.fonts.ready)await Promise.race([document.fonts.ready,sleep(1500)]);
+    fitPapers();
+    await new Promise(r=>{let done=false;const f=()=>{if(!done){done=true;r();}};try{requestAnimationFrame(()=>requestAnimationFrame(f));}catch(e){}setTimeout(f,250);});
+    const tp=Date.now();window.print();STNRUN.lastMs=Date.now()-tp;
+    /* PC 크롬은 인쇄가 넘어갈 때까지 위 줄에서 멈춘다. 멈추지 않고 바로 돌아왔다면, 화면을 지우기 전에 인쇄할 내용을 가져갈 시간을 준다 */
+    if(STNRUN.lastMs<300)await sleep(3000);
+    j.s="done";j.doneAt=Date.now();j.n=j.solo==null?docs.length:1;
+  }catch(e){j.s="fail";j.err=String((e&&e.message)||e).slice(0,80);}
+  finally{const h=$("#stnPapers");if(h)h.innerHTML="";document.body.classList.remove("solo");STNRUN.busy=false;STNRUN.cur=null;
+    if(JOBS[j.id]){scanDirty();syncPush();}if(st.view==="station")render();}
+}
+const stnTestJob=solo=>({id:"T"+Date.now(),at:Date.now(),by:st.user,desk:9,to:st.stn,s:"test",solo,n:solo==null?0:1,unit:"101-1201",
+  p:{ptest:true,dong:"101",ho:"1201",forceType:"59A",sel:{FPCA:"split",N06A:"lump",NBA:"split",GBA:"split",CTA:"split"},cust:{name:"홍길동",phone:"010-1234-5678",birth:"800312",addr:"인천광역시 미추홀구 숭의로 10",addrDetail:"5층",zip:"22175",cash:""},consent2:true}});
+/* 출력 PC는 인쇄 창을 건너뛰므로 크롬의 '머리글과 바닥글'(날짜·주소·쪽수)을 끌 기회가 없다.
+ * 용지 여백을 0으로 주면 크롬이 머리글·바닥글을 찍지 않는다. 여백 8mm는 문서 안쪽에서 그대로 준다 */
+function stnPageStyle(){
+  if($("#stnPage"))return;const s=document.createElement("style");s.id="stnPage";
+  s.textContent="@page{size:A4;margin:0}@media print{#stnPapers .paper{padding:8mm !important;width:210mm !important}}";document.head.appendChild(s);
+}
+function viewStation(){
+  stnEnsure();stnPageStyle();
+  const id=st.stn;const cur=STNRUN.cur;const on=st.stnAuto!==false&&!STNRUN.dup&&!!API;
+  const list=Object.values(JOBS).filter(j=>j.to===id).sort((a,b)=>b.at-a.at).slice(0,12);
+  const stt=j=>({req:"받는 중",got:"인쇄 중",done:"출력함",fail:"실패"+(j.err?" · "+esc(j.err):""),cancel:"취소됨"})[j.s]||j.s;
+  const cls=j=>j.s==="done"?"ok":j.s==="fail"?"warn":"think";
+  return`<section class="panel stn noprint" style="margin-top:18px">
+   <div class="row" style="justify-content:space-between;align-items:center;gap:10px"><h2 style="margin:0">출력 담당 PC · 프린터 ${id}</h2>
+    <span>${["A","B"].map(k=>`<button type="button" class="seg" data-stnid="${k}" aria-pressed="${id===k}" style="padding:8px 14px">프린터 ${k}</button>`).join(" ")}</span></div>
+   <p class="hint">계약석 태블릿에서 [전체 인쇄]를 누르면 이 PC가 받아서 Windows 기본 프린터로 바로 뽑습니다. 이 창을 닫거나 최소화하지 말고, 노트북 덮개도 닫지 마세요.</p>
+   ${API?"":`<div class="alert">구글시트 연결이 없는 시안 파일입니다. 출력 담당은 실제 주소(깃헙)로 열어야 동작합니다.</div>`}
+   ${STNRUN.dup?`<div class="alert">다른 PC가 이미 프린터 ${id} 담당으로 켜져 있습니다. 같은 계약서가 두 번 나오지 않게 이 PC는 멈췄습니다. 이 PC가 다른 프린터에 물려 있으면 위에서 프린터 ${stnOther(id)}를 고르세요.
+     <div class="row" style="margin-top:8px"><button type="button" class="seg" id="stn-take">그 PC 대신 이 PC를 프린터 ${id} 담당으로 쓰기</button></div></div>`:""}
+   <div class="stn-big ${cur?"work":on?"ready":"off"}">${cur?`인쇄 중 · ${esc(cur.by)} · ${unitLabel(cur.unit)} · ${cur.solo==null?(cur.n?cur.n+"장":"검증 세트"):"1장"}`:on?"대기 중 — 요청이 오면 자동으로 인쇄합니다":"자동 인쇄 멈춤"}</div>
+   <div class="row" style="gap:8px;margin-top:12px;align-items:center"><button type="button" class="btn sub" id="stn-auto" style="padding:10px 16px">${st.stnAuto!==false?"자동 인쇄 멈추기":"자동 인쇄 켜기"}</button>
+    <button type="button" class="seg" id="stn-t1" style="padding:10px 14px">시험 인쇄 1장</button><button type="button" class="seg" id="stn-t7" style="padding:10px 14px">검증 세트 인쇄 (7장)</button></div>
+   <div class="kv" style="margin-top:14px"><span>화면 꺼짐 방지</span><b>${STNRUN.wake?"켜짐":"꺼짐 — Windows 전원 설정에서 화면 끄기·절전을 '안 함'으로 두세요"}</b>
+    <span>인쇄 창</span><b>[시험 인쇄 1장]을 눌렀을 때 인쇄 창이 뜨지 않고 바로 나오면 정상입니다. 창이 뜨면 '출력PC_시작' 파일로 다시 여세요.</b></div>
+   <h3 class="vh" style="margin-top:18px">최근 요청</h3>
+   ${list.length?`<table class="ex-table"><tr><th>보낸 시각</th><th>보낸 자리</th><th>세대</th><th>장수</th><th>상태</th><th></th></tr>${list.map(j=>`<tr><td class="num">${hhmm(j.at)}</td><td>${esc(j.by||"")}</td><td>${unitLabel(j.unit)}</td><td class="num">${j.solo==null?j.n:1}</td><td><span class="chip ${cls(j)}">${stt(j)}</span></td><td>${j.p&&j.s!=="req"&&j.s!=="got"?`<button type="button" class="seg" data-rep="${j.id}" style="padding:5px 10px">다시 출력</button>`:""}</td></tr>`).join("")}</table>
+    <p class="note">계약자 이름과 연락처는 이 화면에 나오지 않습니다. [다시 출력]은 출력 후 10분 동안만 됩니다.</p>`:`<p class="empty">아직 받은 요청이 없습니다.</p>`}
+  </section>`;
+}
+function bindStation(){
+  $$("[data-stnid]").forEach(b=>b.onclick=()=>{if(STNRUN.busy)return;const old=st.stn;st.stn=b.dataset.stnid;lsSet("oc_stn",st.stn);st.user="출력 "+st.stn;
+    if(old!==st.stn&&STN[old]&&STN[old].dev===DEV){STN[old]={...STN[old],auto:false};}STNRUN.dup=false;STNRUN.since=Date.now();stnBeat();render();});
+  const a=$("#stn-auto");if(a)a.onclick=()=>{st.stnAuto=st.stnAuto===false;stnBeat();render();};
+  const tk=$("#stn-take");if(tk)tk.onclick=()=>{STNRUN.since=1;STNRUN.dup=false;const o=STN[st.stn];if(o)o.since=Date.now();stnBeat();render();toast("이 PC를 담당으로 바꿨습니다. 다른 PC는 20초 안에 멈춥니다.");};
+  const t1=$("#stn-t1");if(t1)t1.onclick=()=>stnPrint(stnTestJob(0),true);
+  const t7=$("#stn-t7");if(t7)t7.onclick=()=>stnPrint(stnTestJob(null),true);
+  $$("[data-rep]").forEach(b=>b.onclick=()=>{const j=JOBS[b.dataset.rep];if(j&&j.p)stnPrint(j,true);});
+}
 
 /* ===== 공통 렌더 ===== */
 function render(){_render();afterRender();}
 function _render(){
   $("#siteLabel").textContent=S.siteName+" ("+S.siteCode+")";
-  const app=$("#app");document.body.classList.remove("has-bot");
+  const app=$("#app");document.body.classList.remove("has-bot");document.body.classList.toggle("stn-mode",isStn());{const sp=$("#stnPage");if(sp&&!isStn())sp.remove();}
   if(st.meMode){$("#topbar").hidden=true;app.innerHTML=viewMe();return;}
   if(st.guestMode){$("#topbar").hidden=true;app.innerHTML=viewGuestPhone();bindGuest(true);return;}
   if(st.custView&&st.user&&st.view==="contract"&&st.step>=1&&!special()){$("#topbar").hidden=true;document.body.classList.add("has-bot");app.innerHTML=viewCustomer();bindCustomer();return;}
@@ -771,7 +989,7 @@ function _render(){
   if(!st.user){app.innerHTML=viewLogin();bindLogin();return;}
   if(!allowed.includes(st.view))st.view=allowed[0];
   ({guest:()=>{app.innerHTML=viewGuestDesk();bindGuest(false);},consult:()=>{app.innerHTML=viewConsult();bindConsult();},
-    status:()=>{app.innerHTML=viewStatus();bindStatus();},samsung:()=>{app.innerHTML=viewSamsung();bindSamsung();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},
+    status:()=>{app.innerHTML=viewStatus();bindStatus();},samsung:()=>{app.innerHTML=viewSamsung();bindSamsung();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},station:()=>{app.innerHTML=viewStation();bindStation();},
     contract:()=>{const body=[viewQueue,viewItems,viewCust,viewPrint,viewPay][st.step]();const bar=botBar();if(bar)document.body.classList.add("has-bot");
       app.innerHTML=special()?`<div class="main" style="grid-template-columns:minmax(0,1fr)"><div style="min-width:0">${body}</div></div>${bar}`:`<div class="main"><div style="min-width:0">${body}</div>${sidePanel()}</div>${bar}`;bindContract();}})[st.view]();
 }
@@ -782,10 +1000,10 @@ function viewLogin(){
   const row=(r,l)=>{const g=S.staff.filter(x=>x.role===r);return g.length?`<div class="field lgrp"><label>${l}</label><div class="row" style="gap:6px">${g.map(btn).join("")}</div></div>`:"";};
   return`<section class="panel login"><h2>로그인</h2>
   <p class="hint">태블릿 번호를 고르고 PIN을 누르세요. 기록에는 이름 대신 번호가 남습니다.</p>
-  ${row("상담","상담 실장")}${row("계약","계약석")}${row("안내","입구 안내")}${row("관리","관리")}${row("삼성","삼성 계약석")}
+  ${row("상담","상담 실장")}${row("계약","계약석")}${row("안내","입구 안내")}${row("관리","관리")}${row("삼성","삼성 계약석")}${row("출력","출력 담당 PC (프린터 옆에 켜 두는 PC)")}
   <div class="field" style="margin-top:14px"><label>PIN 4자리${st.pick?" · "+esc(st.pick):""}</label><div class="pin">${[0,1,2,3].map(i=>`<span class="${i<st.pin.length?"on":""}"></span>`).join("")}</div>
    <div class="pad">${["1","2","3","4","5","6","7","8","9","지움","0","←"].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join("")}</div></div>
-  <p class="note">검토용 PIN: 상담 N번 400N (상담 3번 → 4003) · 계약 N번 100N · 안내 5555 · 관리 최종태 0000, 최정은 0001 · 삼성 7777</p></section>`;
+  <p class="note">검토용 PIN: 상담 N번 400N (상담 3번 → 4003) · 계약 N번 100N · 안내 5555 · 관리 최종태 0000, 최정은 0001 · 삼성 7777 · 출력 A 9001, B 9002</p></section>`;
 }
 function bindLogin(){
   $$("[data-who]").forEach(b=>b.onclick=()=>{st.pick=b.dataset.who;st.pin="";render();});
@@ -794,7 +1012,7 @@ function bindLogin(){
     /* 4자리가 되기 전에는 점만 바꾼다 (화면 전체를 다시 그리면 화면이 튐) */
     if(st.pin.length<4){$$(".pin span").forEach((d,i)=>d.classList.toggle("on",i<st.pin.length));return;}
     if(st.pin.length===4){const s=S.staff.find(x=>x.name===st.pick);
-      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.desk=s.role==="계약"?(s.no||1):9;st.view=s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="삼성"?"samsung":s.role==="관리"?"ledger":"guest";st.pin="";st.pick="";toast(`${s.name} 로그인`);}
+      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.desk=s.role==="계약"?(s.no||1):9;if(s.stn){st.stn=s.stn;lsSet("oc_stn",s.stn);}st.view=s.role==="출력"?"station":s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="삼성"?"samsung":s.role==="관리"?"ledger":"guest";st.pin="";st.pick="";toast(`${s.name} 로그인`);}
       else{st.pin="";toast("PIN이 맞지 않습니다.");}}
     render();});
 }
@@ -896,7 +1114,7 @@ function bindGuest(phone){
   const back=$("#g-back");if(back)back.onclick=()=>{st.guestMode=false;st.gdone=false;render();};
   const again=$("#g-again");if(again)again.onclick=()=>{st.gdone=false;render();};
   const pv=$("#g-phone-preview");if(pv)pv.onclick=()=>{st.guestMode=true;st.gdone=false;render();};
-  const qp=$("#g-qr-print");if(qp)qp.onclick=()=>{document.body.classList.add("print-qr");setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove("print-qr"),500);},100);};
+  const qp=$("#g-qr-print");if(qp)qp.onclick=()=>{document.body.classList.remove("solo");document.body.classList.add("print-qr");window.print();};
   const u=$("#g-unit");if(u)u.oninput=()=>{g.unit=u.value;const hit=parseUnit(g.unit);const el=$("#g-hit");el.className="unit-hit"+(g.unit&&!hit?" bad":"");el.textContent=hit?`${unitLabel(hit)} · ${UNITS[hit]} 타입`:g.unit?"세대 리스트에 없는 동·호수입니다":"";};
   const un=$("#g-unknown");if(un)un.onchange=()=>{g.unknown=un.checked;render();};
   [["g-name","name"],["g-phone","phone"],["g-addrDetail","addrDetail"],["g-paper","paperNo"]].forEach(([id,k])=>{const el=$("#"+id);if(el)el.oninput=()=>g[k]=el.value;});
@@ -1252,9 +1470,10 @@ function viewPrint(){
     :"미리보기로 고객과 내용을 확인한 뒤 인쇄합니다. 서명이 끝나면 [다음]으로 결제 단계로 갑니다.";
   const flow=`<section class="panel"><span class="who staff">${esc(st.user)}</span><h2>${title}</h2><p class="hint">${hint}</p>
    <div class="flow">
-    <div class="flow-step ${st.printed?"done":""}"><span class="n">1</span><span><b>인쇄 — 모두 ${docs.length}장</b><small>${st.ptest?"":`총괄표 + 공급자별 계약서 ${docs.length/copyTags().length-1}종 · `}${S.printMode==="B"&&!st.ptest?"고객용과 보관용이 한 번에, 문서마다 짝지어 나옵니다 (인쇄 매수는 1 그대로)":P.print}</small></span><button class="btn sub" id="doPrint" style="flex:0 0 auto;padding:10px 16px">${st.printed?"다시 인쇄":"전체 인쇄"}</button></div>
+    <div class="flow-step ${st.printed?"done":""}"><span class="n">1</span><span><b>인쇄 — 모두 ${docs.length}장</b><small>${st.ptest?"":`총괄표 + 공급자별 계약서 ${docs.length/copyTags().length-1}종 · `}${S.printMode==="B"&&!st.ptest?"고객용과 보관용이 한 번에, 문서마다 짝지어 나옵니다 (인쇄 매수는 1 그대로)":P.print}</small></span><button class="btn sub" id="doPrint" style="flex:0 0 auto;padding:10px 16px">${st.printed?"다시 인쇄":"전체 인쇄"}${printRoute().to?" · 프린터 "+printRoute().to:""}</button></div>
     ${special()?"":`<div class="flow-step"><span class="n">2</span><span><b>고객 자필 기재와 서명</b><small>총괄표: 동·호수·성명 자필, 서명, 제3자 제공 <b>□ 동의함</b> 직접 체크 · 계약서: 서명 각 1회 · ${P.sign}</small></span><span></span></div>`}
    </div>
+   ${routeHtml()}<div id="jobLine">${jobLineHtml()}</div>
    ${gone.length?`<div class="alert">계약에서 빠지는 공급자: ${esc(gone.map(co=>COMPANIES[co].name).join(", "))} — 계약서는 나오지 않고, 확정하면 관리대장에 취소로 기록됩니다.</div>`:""}
    ${(()=>{if(st.ptest)return"";const miss=printCos().filter(co=>/입력 예정/.test([COMPANIES[co].bank,COMPANIES[co].tel,COMPANIES[co].bizno,COMPANIES[co].ceo].join(" ")));return miss.length?`<div class="alert">업체 정보(사업자번호·계좌·전화 등)가 아직 비어 있는 공급자: <b>${esc(miss.map(co=>COMPANIES[co].name).join(", "))}</b> — 계약서에 '(입력 예정)'으로 찍힙니다. 실제 계약 전에 채워야 합니다.</div>`:"";})()}
    <div class="alert" id="fitWarn" hidden>붉은 테두리 문서는 한 장을 넘어 글자를 줄였는데도 넘칩니다. 품목 수나 약관 길이를 확인하세요.</div>
@@ -1274,10 +1493,11 @@ function fitPapers(){
   const w=$("#fitWarn");if(w)w.hidden=!over;
 }
 function doPrint(solo){
-  document.body.classList.toggle("solo",solo!=null);$$(".pwrap").forEach((w,i)=>w.classList.toggle("on",i===solo));
-  setTimeout(()=>window.print(),250);
+  /* 아이패드(사파리)는 버튼을 누른 그 순간에 부르지 않은 인쇄를 '자동 프린트'로 보고 막는다. 그래서 기다리지 않고 바로 부른다 */
+  document.body.classList.remove("print-qr");document.body.classList.toggle("solo",solo!=null);$$(".pwrap").forEach((w,i)=>w.classList.toggle("on",i===solo));
+  window.print();
 }
-window.addEventListener("afterprint",()=>{document.body.classList.remove("solo");});
+window.addEventListener("afterprint",()=>{document.body.classList.remove("solo");document.body.classList.remove("print-qr");});
 window.addEventListener("resize",()=>{if(st.view==="contract"&&st.step===3)fitPapers();});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(st.view==="contract"&&st.step===3)fitPapers();});
 function viewPay(){
@@ -1328,9 +1548,12 @@ function bindContract(){
   $$("[data-pm]").forEach(i=>i.oninput=()=>{const co=i.dataset.pm;st.paid[co]={...st.paid[co],memo:i.value};});
   $$("[data-copy]").forEach(b=>b.onclick=()=>{const co=b.dataset.copy;copyText($("#msg-"+co),"복사했습니다. 업체 단톡방에 붙여넣으세요.");});
   $$("[data-cd]").forEach(b=>b.onclick=()=>{const co=b.dataset.cd;st.paid[co]={...st.paid[co],done:!st.paid[co].done};render();});
-  const pr=$("#doPrint");const printAll=()=>{if(!special()&&!st.printed){st.printed=true;render();toast("서명 대기로 저장 · 인쇄 창을 엽니다");}const v=curVisit();if(st.reprint&&v){v.reprints=(v.reprints||[]).concat({at:Date.now(),by:st.user});afterRender();}doPrint(null);};
+  const pr=$("#doPrint");const printAll=()=>{const to=printRoute().to;
+    if(to){if(!sendJob(null,to))return;if(!special())st.printed=true;const v=curVisit();if(st.reprint&&v)v.reprints=(v.reprints||[]).concat({at:Date.now(),by:st.user});render();toast(`프린터 ${to}로 보냈습니다. 몇 초 뒤 나옵니다.`);return;}
+    if(!special()&&!st.printed){st.printed=true;render();toast("서명 대기로 저장 · 인쇄 창을 엽니다");}const v=curVisit();if(st.reprint&&v){v.reprints=(v.reprints||[]).concat({at:Date.now(),by:st.user});afterRender();}doPrint(null);};
   if(pr)pr.onclick=printAll;const bp=$("#bb-print");if(bp)bp.onclick=printAll;
-  $$("[data-p1]").forEach(b=>b.onclick=()=>doPrint(+b.dataset.p1));
+  $$("[data-p1]").forEach(b=>b.onclick=()=>{const to=printRoute().to;if(!to){doPrint(+b.dataset.p1);return;}if(sendJob(+b.dataset.p1,to)){render();toast(`이 장을 프린터 ${to}로 보냈습니다.`);}});
+  bindRoute();
   const bx=$("#bb-close");if(bx)bx.onclick=()=>{const back=st.reprint?"ledger":"settings";const u=st.reprint&&st.reprint.unit;Object.assign(st,blank());st.view=back;if(u)st.lunit=u;render();};
   const cf=$("#confirm");if(cf)cf.onclick=saveContract;
   const n=$("#next");if(n)n.onclick=()=>{st.step++;render();window.scrollTo(0,0);};
@@ -1627,6 +1850,7 @@ function viewSettings(){
    <p class="note">샘플은 계약 30여 세대와 대기 중 세대를 시트에 넣습니다. '모두 지우기'는 테스트 시트 전용이며 모든 기기에서 지워집니다.</p>`:""}
   <h3 style="margin-top:20px;font-size:15px">프린터 검증</h3><p class="hint" style="margin-bottom:6px">행사 전에 이 태블릿과 프린터로 실제 양식이 제대로 나오는지 확인합니다. 점검 쪽 1장과 견본 계약서 세트가 나옵니다.</p>
   <button class="btn sub" id="s-ptest" style="padding:12px 18px">검증용 인쇄 열기</button>
+  ${API?`<p class="note">출력 담당 PC: 프린터 A <i class="dot ${stnAlive("A")?"on":""}"></i> ${stnAlive("A")?"켜짐":"꺼짐"} · 프린터 B <i class="dot ${stnAlive("B")?"on":""}"></i> ${stnAlive("B")?"켜짐":"꺼짐"} — 켜져 있으면 계약석의 [전체 인쇄]가 그 PC로 가고, 둘 다 꺼져 있으면 태블릿에서 직접 인쇄합니다.</p>`:""}
   <h3 style="margin-top:20px;font-size:15px">납부 단계</h3>
   ${S.stages.map((s,i)=>`<div class="stage-row"><div class="field"><label for="sn${i}">단계명</label><input id="sn${i}" data-sn="${i}" value="${esc(s.name)}"></div><div class="field"><label for="sr${i}">비율(%)</label><input id="sr${i}" data-sr="${i}" type="number" value="${s.ratio}"></div><div class="field f-due"><label for="sd${i}">납부일</label><input id="sd${i}" data-sd="${i}" value="${esc(s.due)}"></div><button class="x" data-sx="${i}" aria-label="삭제" ${S.stages.length<=2||i===0?"disabled":""}>✕</button></div>`).join("")}
   <div class="row" style="margin-top:10px;align-items:center"><button class="seg" id="addStage" style="padding:8px 14px">+ 중도금 단계 추가</button><span class="sumchk ${sum===100?"good":"bad"}">합계 ${sum}% ${sum===100?"· 정상":"· 100%가 되어야 저장됩니다"}</span></div>
@@ -1642,7 +1866,7 @@ function bindSettings(){
   const sd=$("#s-seed");if(sd)sd.onclick=()=>{seedSample();render();toast("샘플 데이터를 시트에 보내는 중입니다.");};
   const rs=$("#s-reset");if(rs)rs.onclick=async()=>{if(!st.resetArm){st.resetArm=true;render();setTimeout(()=>{if(st.resetArm){st.resetArm=false;if(st.view==="settings")render();}},5000);return;}st.resetArm=false;
     try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({op:"reset"})}).then(x=>x.json());
-      VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);SYNC.hash={};SYNC.pending={};SYNC.resetAt=r.now;lsSet("oc_pending","{}");render();toast("모두 지웠습니다.");}catch(e){toast("지우지 못했습니다. 연결을 확인하세요.");}};
+      VISITS.length=0;LEDGER.length=0;HIST.length=0;Object.keys(ORIG).forEach(k=>delete ORIG[k]);Object.keys(OWNER).forEach(k=>delete OWNER[k]);[JOBS,STN,STN_T,JOB_T].forEach(o=>Object.keys(o).forEach(k=>delete o[k]));SYNC.hash={};SYNC.pending={};SYNC.resetAt=r.now;lsSet("oc_pending","{}");render();toast("모두 지웠습니다.");}catch(e){toast("지우지 못했습니다. 연결을 확인하세요.");}};
   $("#s-name").onchange=e=>{S.siteName=e.target.value;render();};$("#s-code").onchange=e=>{S.siteCode=e.target.value.toUpperCase();render();};
   $("#s-lump").onchange=e=>{S.lumpDiscount=+e.target.value||0;};$("#s-print").onchange=e=>{S.printMode=e.target.value;};
   $("#s-desks").onchange=e=>{S.desks=Math.max(1,Math.min(9,+e.target.value||1));};
@@ -1658,6 +1882,8 @@ function bindSettings(){
 }
 {const qs=new URLSearchParams(location.search);if(qs.has("guest")){st.guestMode=true;st.guestOnly=true;}
  if(qs.has("me")){st.meMode=true;st.guestOnly=true;st.meId=qs.get("me");st.meTok=qs.get("t")||"";}}
+{const qs=new URLSearchParams(location.search);const k=qs.has("station")?((qs.get("station")||"").toUpperCase()==="B"?"B":"A"):"";
+ if(k){st.user="출력 "+k;st.role="출력";st.view="station";st.stn=k;lsSet("oc_stn",k);}else{const o=lsGet("oc_stn");if(o==="B")st.stn="B";}}
 if(!API)seedSample();
 if(st.meMode){render();if(API){loadMe();setInterval(loadMe,8000);}else{st.me={ok:false,err:"notfound"};render();}}else{initSync();render();}
 </script>
@@ -1666,6 +1892,7 @@ if(st.meMode){render();if(API){loadMe();setInterval(loadMe,8000);}else{st.me={ok
 /* 새 버전 알림: 3분마다 서버의 최신 파일을 확인해서 버전이 바뀌었으면 위에 안내를 띄운다 */
 (function(){const cur=(document.querySelector('.sample')||{}).textContent||"";const ver=(cur.match(/v[0-9.]+/)||[""])[0];
 function chk(){fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/검토용 시안 (v[0-9.]+)/);
+ if(m&&ver&&m[1]!==ver&&typeof isStn==="function"&&isStn()&&!STNRUN.busy){const q=location.search.replace(/[?&]nc=\d+/g,"").replace(/^&/,"?");location.replace(location.pathname+q+(q?"&":"?")+"nc="+Date.now());return;}
  if(m&&ver&&m[1]!==ver&&!document.getElementById("newVer")){const d=document.createElement("div");d.id="newVer";
   d.style.cssText="position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9999;background:#2c4a8a;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);font-size:14px;display:flex;gap:10px;align-items:center";
   d.innerHTML="새 버전("+m[1]+")이 올라왔습니다 <button style='background:#fff;color:#2c4a8a;border:0;border-radius:6px;padding:6px 10px;font-weight:700'>새로고침</button>";
