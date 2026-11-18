@@ -491,7 +491,7 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.1 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -825,6 +825,16 @@ function routeHtml(){
   return`<div class="proute"><span>출력 보낼 곳</span>${b("A","프린터 A")}${b("B","프린터 B")}${b("here","이 태블릿에서 직접")}
    ${r.to||PTO==="here"?"":`<small>켜져 있는 출력 PC가 없어 이 태블릿에서 직접 인쇄합니다.</small>`}</div>`;
 }
+/* 같은 프린터에 바로 앞서 넘어간 계약서가 아직 찍히는 중인지 어림한다.
+ * PC가 프린터로 넘긴 시각(같은 PC의 시계끼리 비교)과 장수로 계산한다. 한 장에 걸리는 시간은 어림값이다 */
+const PAGE_MS=6000, JOBSEEN={};
+function jobWait(j){
+  if(!j.doneAt)return{ms:0,who:[],pages:0};let free=0;const act=[];let res={ms:0,who:[],pages:0};
+  Object.values(JOBS).filter(x=>x.to===j.to&&x.s==="done"&&x.doneAt&&x.doneAt<=j.doneAt&&j.doneAt-x.doneAt<600000).sort((a,b)=>a.doneAt-b.doneAt||(a.id===j.id?1:-1)).forEach(x=>{
+    if(x.id===j.id){const ah=act.filter(a=>a.end>j.doneAt);res={ms:Math.max(0,free-j.doneAt),who:[...new Set(ah.map(a=>a.by))],pages:ah.reduce((t,a)=>t+a.n,0)};return;}
+    const n=x.solo==null?(x.n||1):1;const start=Math.max(x.doneAt,free);free=start+n*PAGE_MS;act.push({by:x.by,n,end:free});});
+  return res;
+}
 function jobLineHtml(){
   const j=myJobs()[0];if(!j||j.s==="cancel")return"";
   const age=Math.round((Date.now()-j.at)/1000);const P="프린터 "+j.to;const o=stnOther(j.to);
@@ -834,6 +844,8 @@ function jobLineHtml(){
     :`<div class="jobline bad"><b>${P} 옆 출력 PC가 ${age}초째 받지 않습니다.</b> PC가 켜져 있는지 확인하거나 아래 버튼으로 뽑으세요.${alt}</div>`;
   if(j.s==="got")return age<75?`<div class="jobline wait"><b>${P}에서 인쇄 중입니다 (${what})</b> · ${age}초</div>`
     :`<div class="jobline bad"><b>${P}가 인쇄 중 표시에서 멈췄습니다.</b> 종이가 나왔는지 보고, 안 나왔으면 아래 버튼으로 뽑으세요.${alt}</div>`;
+  if(j.s==="done"){const w=jobWait(j);if(!JOBSEEN[j.id])JOBSEEN[j.id]=Date.now();
+    if(w.pages&&w.ms-(Date.now()-JOBSEEN[j.id])>0)return`<div class="jobline wait"><b>${P}로 넘겼습니다 (${what})</b> · 앞에 보낸 ${esc(w.who.join(", "))} 계약서 ${w.pages}장이 먼저 나옵니다.<small>이어서 바로 나오니 다시 누르지 말고 기다려 주세요.</small></div>`;}
   if(j.s==="done")return`<div class="jobline ok"><b>${P}에서 출력했습니다 (${what})</b> · ${hhmm(j.at)}<small>종이가 안 나왔으면 프린터 용지·걸림을 확인한 뒤 [다시 인쇄]를 누르세요.</small></div>`;
   return`<div class="jobline bad"><b>${P}에서 출력하지 못했습니다.</b>${j.err?" ("+esc(j.err)+")":""}${alt}</div>`;
 }
