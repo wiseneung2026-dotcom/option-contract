@@ -542,7 +542,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.5 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.6 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -819,12 +819,22 @@ function syncBadge(){const el=document.getElementById("syncBadge");if(!el)return
   const n=Object.keys(SYNC.pending).length;
   if(SYNC.ok===false){el.textContent=`● 연결 끊김${n?` · 보낼 기록 ${n}건 보관 중`:""}`;el.className="sync bad";return;}
   const sec=SYNC.at?Math.round((Date.now()-SYNC.at)/1000):null;const ph=window.matchMedia&&matchMedia("(max-width:700px)").matches;el.textContent=n?`● 저장 중 ${n}건`:`● 시트 연결됨${sec!=null&&!ph?` · ${sec}초 전`:""}`;el.className="sync ok";}
-/* v7.4.5 아이폰 사파리: 입력하는 순간 화면이 크게 튀면 입력 직전 위치로 되돌린다 */
-(function(){let y=null,t=0;
- const keep=()=>{if(y!=null&&Date.now()-t<700&&Math.abs(window.scrollY-y)>120)window.scrollTo(0,y);};
- document.addEventListener("beforeinput",e=>{const el=e.target;if(el&&/INPUT|TEXTAREA/.test(el.tagName)&&el.type!=="checkbox"){y=window.scrollY;t=Date.now();}},true);
- document.addEventListener("input",()=>{requestAnimationFrame(keep);setTimeout(keep,150);setTimeout(keep,450);},true);
- window.addEventListener("scroll",keep,{passive:true});
+/* v7.4.6 아이폰 사파리: 입력 중인 칸(주소 검색 창 포함)이 화면 밖으로 밀려나면 직전 위치로 되돌린다.
+ * 손가락으로 직접 스크롤한 경우(1.5초 이내 터치)는 건드리지 않는다. 한글 조합 입력·외부 창(iframe)도 대응 */
+(function(){let good=null,touch=0;
+ const tgt=()=>{const a=document.activeElement;return a&&((/INPUT|TEXTAREA/.test(a.tagName)&&!/checkbox|radio|button|submit/.test(a.type))||a.tagName==="IFRAME")?a:null;};
+ const vis=el=>{const r=el.getBoundingClientRect(),v=window.visualViewport,top=v?v.offsetTop:0,h=v?v.height:innerHeight;return r.bottom>top+20&&r.top<top+h-20;};
+ const chk=()=>{const el=tgt();if(!el){good=null;return;}
+   if(vis(el)){good=window.scrollY;return;}
+   if(Date.now()-touch<1500)return;
+   if(good!=null&&Math.abs(window.scrollY-good)>60)window.scrollTo(0,good);};
+ document.addEventListener("touchstart",()=>{touch=Date.now();},{passive:true,capture:true});
+ document.addEventListener("touchmove",()=>{touch=Date.now();},{passive:true,capture:true});
+ window.addEventListener("scroll",chk,{passive:true});
+ if(window.visualViewport){visualViewport.addEventListener("resize",chk);visualViewport.addEventListener("scroll",chk);}
+ ["input","compositionupdate","compositionend","keyup"].forEach(t=>document.addEventListener(t,()=>{requestAnimationFrame(chk);setTimeout(chk,150);setTimeout(chk,450);},true));
+ const remember=()=>setTimeout(()=>{const el=tgt();if(el&&vis(el))good=window.scrollY;},350);
+ document.addEventListener("focusin",remember,true);window.addEventListener("blur",remember);
 })();
 function initSync(){
   if(!API)return;
