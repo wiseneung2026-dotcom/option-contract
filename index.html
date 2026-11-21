@@ -542,7 +542,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.6 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.7 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -813,7 +813,8 @@ async function syncPullOnce(){const t0=Date.now();let skipped=false;
     if(!skipped)SYNC.last=r.now;SYNC.loaded=true;SYNC.ok=true;SYNC.at=Date.now();SYNC.err="";
     if(changed||SYNC.dirtyRender)syncRender();
   }catch(e){SYNC.ok=false;SYNC.err="연결 끊김";}syncBadge();}
-function syncRender(){const a=document.activeElement;if((a&&/INPUT|TEXTAREA|SELECT|IFRAME/.test(a.tagName)&&a.type!=="checkbox")||st.addrOpen){SYNC.dirtyRender=true;return;}SYNC.dirtyRender=false;render();}
+let lastScrollAt=0;["scroll","touchstart","touchmove"].forEach(t=>window.addEventListener(t,()=>{lastScrollAt=Date.now();},{passive:true,capture:true}));
+function syncRender(){if(Date.now()-lastScrollAt<1500){SYNC.dirtyRender=true;return;}const a=document.activeElement;if((a&&/INPUT|TEXTAREA|SELECT|IFRAME/.test(a.tagName)&&a.type!=="checkbox")||st.addrOpen){SYNC.dirtyRender=true;return;}SYNC.dirtyRender=false;render();}
 function syncBadge(){const el=document.getElementById("syncBadge");if(!el)return;
   if(!API){el.textContent="오프라인 시안 (샘플)";el.className="sync off";return;}
   const n=Object.keys(SYNC.pending).length;
@@ -1049,7 +1050,10 @@ function bindStation(){
 }
 
 /* ===== 공통 렌더 ===== */
-function render(){_render();afterRender();}
+function render(){_render();moveBotbar();afterRender();}
+/* v7.4.7 아이폰 사파리: 하단 고정 버튼 줄을 스크롤되는 본문 밖(#botHost)에 둔다 */
+function moveBotbar(){let h=document.getElementById("botHost");if(!h){h=document.createElement("div");h.id="botHost";document.body.appendChild(h);}
+  const bb=document.querySelector("#app .botbar");if(bb)h.replaceChildren(bb);else if(h.firstChild)h.replaceChildren();}
 function _render(){
   $("#siteLabel").textContent=S.siteName+" ("+S.siteCode+")";
   const app=$("#app");document.body.classList.remove("has-bot");document.body.classList.toggle("stn-mode",isStn());{const sp=$("#stnPage");if(sp&&!isStn())sp.remove();}
