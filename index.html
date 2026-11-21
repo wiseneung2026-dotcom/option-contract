@@ -543,7 +543,7 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.10 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.11 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -928,6 +928,8 @@ function jobLineHtml(){
   const age=Math.round((Date.now()-j.at)/1000);const P="프린터 "+j.to;const o=stnOther(j.to);
   const alt=`<div class="row" style="gap:6px;margin-top:8px">${stnAlive(o)?`<button type="button" class="seg" data-resend="${o}">프린터 ${o}로 다시 보내기</button>`:""}<button type="button" class="seg" id="printHere">이 태블릿에서 직접 인쇄</button></div>`;
   const what=j.solo==null?j.n+"장":"1장";
+  /* v7.4.11: 이 기기 인터넷이 끊겼으면 출력 PC 탓이 아니다. 연결되면 자동으로 보낸다 */
+  if(j.s==="req"&&SYNC.ok===false)return`<div class="jobline bad"><b>이 기기의 인터넷 연결이 끊겼습니다.</b> 와이파이가 다시 연결되면 ${P}로 자동으로 보냅니다. 인쇄를 다시 누르지 마세요. 급할 때만 아래 버튼으로 이 기기에서 직접 인쇄하세요.<div class="row" style="gap:6px;margin-top:8px"><button type="button" class="seg" id="printHere">이 태블릿에서 직접 인쇄</button></div></div>`;
   if(j.s==="req")return age<20?`<div class="jobline wait"><b>${P}로 보냈습니다 (${what})</b> · 받는 중… ${age}초</div>`
     :`<div class="jobline bad"><b>${P} 옆 출력 PC가 ${age}초째 받지 않습니다.</b> PC가 켜져 있는지 확인하거나 아래 버튼으로 뽑으세요.${alt}</div>`;
   if(j.s==="got")return age<75?`<div class="jobline wait"><b>${P}에서 인쇄 중입니다 (${what})</b> · ${age}초</div>`
@@ -1021,12 +1023,18 @@ async function stnPrint(j,manual){
     if(document.fonts&&document.fonts.ready)await Promise.race([document.fonts.ready,sleep(1500)]);
     fitPapers();
     await new Promise(r=>{let done=false;const f=()=>{if(!done){done=true;r();}};try{requestAnimationFrame(()=>requestAnimationFrame(f));}catch(e){}setTimeout(f,250);});
+    /* v7.4.11: 앞 인쇄를 크롬이 아직 넘기는 중에 다음 인쇄를 부르면 크롬이 오류 없이 무시한다(2장 연속 요청 중 1건 누락).
+     * 인쇄 사이에 최소 5초를 두고, 크롬의 '인쇄 넘김 완료(afterprint)'를 기다리거나 장수에 비례해 기다린 뒤 지운다 */
+    const gap=Date.now()-(STNRUN.lastEnd||0);if(gap<5000)await sleep(5000-gap);
+    let ap=false;const onap=()=>{ap=true;};window.addEventListener("afterprint",onap);
     const tp=Date.now();window.print();STNRUN.lastMs=Date.now()-tp;
-    /* PC 크롬은 인쇄가 넘어갈 때까지 위 줄에서 멈춘다. 멈추지 않고 바로 돌아왔다면, 화면을 지우기 전에 인쇄할 내용을 가져갈 시간을 준다 */
-    if(STNRUN.lastMs<300)await sleep(3000);
+    const lim=Date.now()+Math.max(4000,(docs.length||1)*1500);
+    while(!ap&&Date.now()<lim)await sleep(200);
+    await sleep(1500);window.removeEventListener("afterprint",onap);
+    j.pms=STNRUN.lastMs;j.pap=ap;
     j.s="done";j.doneAt=Date.now();j.n=j.solo==null?docs.length:1;
   }catch(e){j.s="fail";j.err=String((e&&e.message)||e).slice(0,80);}
-  finally{const h=$("#stnPapers");if(h)h.innerHTML="";document.body.classList.remove("solo");STNRUN.busy=false;STNRUN.cur=null;
+  finally{STNRUN.lastEnd=Date.now();const h=$("#stnPapers");if(h)h.innerHTML="";document.body.classList.remove("solo");STNRUN.busy=false;STNRUN.cur=null;
     if(JOBS[j.id]){scanDirty();syncPush();}if(st.view==="station")render();}
 }
 const stnTestJob=solo=>({id:"T"+Date.now(),at:Date.now(),by:st.user,desk:9,to:st.stn,s:"test",solo,n:solo==null?0:1,unit:"101-1201",
@@ -1056,7 +1064,7 @@ function viewStation(){
    <div class="kv" style="margin-top:14px"><span>화면 꺼짐 방지</span><b>${STNRUN.wake?"켜짐":"꺼짐 — Windows 전원 설정에서 화면 끄기·절전을 '안 함'으로 두세요"}</b>
     <span>인쇄 창</span><b>[시험 인쇄 1장]을 눌렀을 때 인쇄 창이 뜨지 않고 바로 나오면 정상입니다. 창이 뜨면 '출력PC_시작' 파일로 다시 여세요.</b></div>
    <h3 class="vh" style="margin-top:18px">최근 요청</h3>
-   ${list.length?`<table class="ex-table"><tr><th>보낸 시각</th><th>보낸 자리</th><th>세대</th><th>장수</th><th>상태</th><th></th></tr>${list.map(j=>`<tr><td class="num">${hhmm(j.at)}</td><td>${esc(j.by||"")}</td><td>${unitLabel(j.unit)}</td><td class="num">${j.solo==null?j.n:1}</td><td><span class="chip ${cls(j)}">${stt(j)}</span></td><td>${j.p&&j.s!=="req"&&j.s!=="got"?`<button type="button" class="seg" data-rep="${j.id}" style="padding:5px 10px">다시 출력</button>`:""}</td></tr>`).join("")}</table>
+   ${list.length?`<table class="ex-table"><tr><th>보낸 시각</th><th>보낸 자리</th><th>세대</th><th>장수</th><th>상태</th><th></th></tr>${list.map(j=>`<tr><td class="num">${hhmm(j.at)}</td><td>${esc(j.by||"")}</td><td>${unitLabel(j.unit)}</td><td class="num">${j.solo==null?j.n:1}</td><td><span class="chip ${cls(j)}">${stt(j)}</span>${j.pms!=null?`<small style="color:var(--muted);margin-left:6px">${(j.pms/1000).toFixed(1)}초${j.pap?" ✓":""}</small>`:""}</td><td>${j.p&&j.s!=="req"&&j.s!=="got"?`<button type="button" class="seg" data-rep="${j.id}" style="padding:5px 10px">다시 출력</button>`:""}</td></tr>`).join("")}</table>
     <p class="note">계약자 이름과 연락처는 이 화면에 나오지 않습니다. [다시 출력]은 출력 후 10분 동안만 됩니다.</p>`:`<p class="empty">아직 받은 요청이 없습니다.</p>`}
   </section>`;
 }
@@ -1116,7 +1124,7 @@ function bindLogin(){
     /* 4자리가 되기 전에는 점만 바꾼다 (화면 전체를 다시 그리면 화면이 튐) */
     if(st.pin.length<4){$$(".pin span").forEach((d,i)=>d.classList.toggle("on",i<st.pin.length));return;}
     if(st.pin.length===4){const s=S.staff.find(x=>x.name===st.pick);
-      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.desk=s.role==="계약"?(s.no||1):9;if(s.stn){st.stn=s.stn;lsSet("oc_stn",s.stn);}st.view=s.role==="출력"?"station":s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="관리"?"ledger":"guest";st.pin="";st.pick="";toast(`${s.name} 로그인`);}
+      if(s&&s.pin===st.pin){PTO="";lsSet("oc_pto","");st.user=s.name;st.role=s.role;st.desk=s.role==="계약"?(s.no||1):9;if(s.stn){st.stn=s.stn;lsSet("oc_stn",s.stn);}st.view=s.role==="출력"?"station":s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="관리"?"ledger":"guest";st.pin="";st.pick="";toast(`${s.name} 로그인`);}
       else{st.pin="";toast("PIN이 맞지 않습니다.");}}
     render();});
 }
@@ -1394,6 +1402,10 @@ function selToVisit(v){if(!v)return;const by={};Object.entries(st.sel).forEach((
   CATALOG.forEach(c=>{if(isSS(c.id))return;const it=v.items[c.id];
     if(by[c.id])v.items[c.id]={...(it||{}),state:"sel",opts:by[c.id]};
     else if(it&&it.state==="sel")v.items[c.id]={...it,state:"think"};});}
+/* v7.4.11: 계약석에서 입력 중인 내용을 이 기기에 임시 저장한다(시트에는 안 올림). 앱이 닫혀도 [다시 열기]로 되살린다 */
+const DRAFT_K="oc_draft";
+function draftGet(id){try{const d=JSON.parse(lsGet(DRAFT_K)||"null");if(d&&d.vid===id&&Date.now()-d.at<3*3600e3)return d;}catch(e){}return null;}
+setInterval(()=>{if(st.user&&st.view==="contract"&&st.visitId&&st.step>=1&&!st.amend&&!st.reprint&&!st.ptest){try{lsSet(DRAFT_K,JSON.stringify({vid:st.visitId,at:Date.now(),step:st.step,cust:st.cust,consent1:st.consent1,consent2:st.consent2,sel:st.sel,dong:st.dong,ho:st.ho}));}catch(e){}}},1500);
 async function callVisit(v){
   if(!v)return;try{if(API)await syncPull();}catch(e){}
   v=VISITS.find(x=>x.id===v.id)||v;
@@ -1402,7 +1414,9 @@ async function callVisit(v){
   Object.assign(st,blank());st.visitId=v.id;st.t0=Date.now();[st.dong,st.ho]=v.unit?v.unit.split("-"):["",""];
   Object.entries(v.items).forEach(([c,it])=>{if(it.state==="sel"&&!isSS(c))Object.assign(st.sel,it.opts);});
   st.cust={name:v.name,phone:v.phone,birth:birth6(v.birth),addr:v.addr||"",addrDetail:v.addrDetail||"",zip:v.zip||"",cash:""};
-  st.step=1;render();window.scrollTo(0,0);toast(`${v.no?v.no+"번 ":""}${v.name}님을 호출했습니다. 번호와 이름으로 불러 주세요.`);
+  st.step=1;const dr=draftGet(v.id);
+  if(dr){Object.assign(st.cust,dr.cust||{});if(dr.consent1!=null)st.consent1=dr.consent1;if(dr.consent2!=null)st.consent2=dr.consent2;if(dr.sel)st.sel=dr.sel;if(dr.dong){st.dong=dr.dong;st.ho=dr.ho;}st.step=Math.min(Math.max(1,dr.step||1),2);}
+  render();window.scrollTo(0,0);toast(dr?`${v.name}님 — 입력하던 내용을 되살렸습니다. 확인 후 이어서 진행하세요.`:`${v.no?v.no+"번 ":""}${v.name}님을 호출했습니다. 번호와 이름으로 불러 주세요.`);
 }
 /* 관리대장에서 세대를 계약석으로 불러온다: mode "reprint" = 재출력만, "amend" = 변경 계약 */
 function loadUnit(u,mode){
