@@ -543,7 +543,7 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.9 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.10 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -956,7 +956,8 @@ setInterval(()=>{
 const STNRUN={on:false,busy:false,seen:{},cur:null,dup:false,since:0,wake:null,lastMs:null};
 function stnHost(){let h=$("#stnPapers");if(!h){h=document.createElement("div");h.id="stnPapers";h.className="papers";document.body.appendChild(h);}return h;}
 function stnBeat(){
-  if(!isStn()||!API)return;const o=STN[st.stn];
+  if(!isStn()||!API)return;if(!SYNC.loaded)return; /* v7.4.10: 시트에서 담당 정보를 받아오기 전에는 판단하지 않는다 */
+  STNRUN.beat1=true;const o=STN[st.stn];
   /* 같은 프린터 담당으로 PC 두 대가 켜지면 같은 계약서가 두 번 나온다. 나중에 켠 쪽이 멈춘다 */
   if(o&&o.dev&&o.dev!==DEV&&STN_T[st.stn]&&srvNow()-STN_T[st.stn]<65000&&(o.since||0)<=STNRUN.since){if(!STNRUN.dup){STNRUN.dup=true;if(st.view==="station")render();}return;}
   STNRUN.dup=false;STN[st.stn]={at:Date.now(),by:st.user,auto:st.stnAuto!==false,dev:DEV,since:STNRUN.since};scanDirty();syncPush();
@@ -977,14 +978,14 @@ function stnEnsure(){
   let n=0,started=false;
   const tick=()=>{if(!isStn())return;n++;stnTick();
     if(n%4===0&&API)syncPull().then(()=>{syncPush();stnTick();});
-    if(n%40===2)stnBeat();
+    if(n%40===2||(!STNRUN.beat1&&SYNC.loaded))stnBeat();
     if(n%120===0)stnClean();};
   const plain=()=>{if(!started){started=true;setInterval(tick,500);}};
   /* 창이 가려져도 느려지지 않게 별도 타이머(워커)로 돌린다. 안 되면 보통 타이머로 */
   try{const w=new Worker(URL.createObjectURL(new Blob(["setInterval(()=>postMessage(0),500)"],{type:"text/javascript"})));w.onmessage=()=>{started=true;tick();};w.onerror=plain;setTimeout(()=>{if(!started)plain();},2500);}catch(e){plain();}
 }
 function stnTick(){
-  if(!isStn()||st.view!=="station"||STNRUN.busy||STNRUN.dup||st.stnAuto===false)return;
+  if(!isStn()||st.view!=="station"||STNRUN.busy||STNRUN.dup||!STNRUN.beat1||st.stnAuto===false)return;
   const j=Object.values(JOBS).filter(x=>x.s==="req"&&x.to===st.stn&&x.p&&!STNRUN.seen[x.id]).sort((a,b)=>(JOB_T[a.id]||a.at)-(JOB_T[b.id]||b.at))[0];
   if(!j)return;
   /* PC를 늦게 켰을 때 한참 전 요청이 쏟아져 나오지 않게, 3분 넘은 요청은 뽑지 않는다 */
