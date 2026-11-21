@@ -530,7 +530,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.2 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.3 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -553,14 +553,13 @@ const S = {
     ...[1,2,3].map(n=>({name:"계약 "+n+"번",pin:"100"+n,role:"계약",no:n})),
     {name:"안내 1번",pin:"5555",role:"안내",no:1},
     {name:"관리 최종태",pin:"0000",role:"관리"},{name:"관리 최정은",pin:"0001",role:"관리"},
-    {name:"삼성",pin:"7777",role:"삼성"},
     /* v7.4: 프린터 옆에 켜 두는 출력 담당 PC */
     {name:"출력 A",pin:"9001",role:"출력",stn:"A"},{name:"출력 B",pin:"9002",role:"출력",stn:"B"}],
   desks:3, printMode:"B"
 };
-const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","samsung","status","ledger","settings"],삼성:["samsung"],출력:["station"]};
-const ROLE_LABEL={안내:"입구 안내",상담:"상담 실장",계약:"계약석",관리:"관리",삼성:"삼성 계약석"};
-const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",samsung:"삼성",status:"계약 현황",ledger:"관리대장",settings:"현장 설정",station:"출력 담당"};
+const ROLES={안내:["guest"],상담:["guest","consult","status"],계약:["guest","consult","contract","status","ledger"],관리:["guest","consult","contract","status","ledger","settings"],출력:["station"]};
+const ROLE_LABEL={안내:"입구 안내",상담:"상담 실장",계약:"계약석",관리:"관리"};
+const VIEWS={guest:"방명록",consult:"상담",contract:"계약석",status:"계약 현황",ledger:"관리대장",settings:"현장 설정",station:"출력 담당"};
 const PRINT={
  A:{name:"감압지 2매 1조",print:"감압지에 1세트 인쇄 (윗장 주관사 보관용 · 아랫장 고객용)",sign:"한 번 쓰면 아랫장에 전사됩니다",receipt:"윗장·아랫장",tag:"2매 1조 · 윗장 주관사 / 아랫장 고객"},
  B:{name:"일반용지 2부 (한 번에)",print:"일반 용지에 고객용·보관용 2부가 한 번에 인쇄됩니다",sign:"고객용과 보관용에 각각 서명합니다",receipt:"고객용·보관용 2부",tag:"고객용 / 보관용"},
@@ -570,7 +569,7 @@ const PRINT={
  *        공통 부분(성립·납부·14일 철회·승계·통지 등)은 총괄표의 COMMON_TERMS 에 있다.
  * src:   특약의 출처. "받음" = 업체 계약서 수령 후 옮김(업체 확인 필요), 없으면 아직 계약서를 받지 못한 업체 */
 const COMPANIES = {
-  SS:{name:"삼성전자 (삼성 계약석)",short:"삼성",bizno:"-",ceo:"-",tel:"-",addr:"-",bank:"-",holder:"-",warranty:"무상 AS 1년"},
+  SS:{name:"삼성전자 (별도 계약)",short:"삼성",bizno:"-",ceo:"-",tel:"-",addr:"-",bank:"-",holder:"-",warranty:"무상 AS 1년"},
   BO:{name:"보아스 인덕션",short:"보아스",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",addr:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"무상 AS 1년"},
   KW:{name:"쾌존 음식물처리기",short:"쾌존",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",addr:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"무상 AS 1년"},
   FR:{name:"냉장고장 (가구)",short:"냉장고장",bizno:"(입력 예정)",ceo:"(입력 예정)",tel:"(입력 예정)",addr:"(입력 예정)",bank:"(계좌 입력 예정)",holder:"-",warranty:"(입력 예정)"},
@@ -754,8 +753,8 @@ const depositorName=()=>`${st.dong}${st.ho}${st.cust.name.trim()}`;
 function byCompany(){const g={};selected().forEach(x=>{(g[x.cat.co]=g[x.cat.co]||[]).push(x);});return g;}
 const nowAmt=list=>list.reduce((t,x)=>t+schedule(x.opt.price,x.cat.id,x.method)[0].amt,0);
 const viaLabel=v=>v.via==="qr"?"고객 QR":v.via==="tablet"?"방명록 태블릿":v.via==="desk"?"계약석 직접 입력":`${v.revisit?"재방문 · ":""}직원 입력${v.staffBy?" · "+v.staffBy:""}${v.paperNo?" · 종이 "+v.paperNo+"번":""}`;
-const statusChip=s=>({방문:"gray",상담중:"",보류:"warn",계약대기:"think",계약:"ok",미결정:"warn"}[s]);
-const statusName=s=>({방문:"상담 대기",상담중:"상담 중",보류:"보류",계약대기:"계약 대기",계약:"계약",미결정:"미결정"}[s]);
+const statusChip=s=>({방문:"gray",상담중:"",보류:"warn",계약대기:"think",계약:"ok",미결정:"warn",삼성안내:"gray"}[s]);
+const statusName=s=>({방문:"상담 대기",상담중:"상담 중",보류:"보류",계약대기:"계약 대기",계약:"계약",미결정:"미결정",삼성안내:"삼성 안내"}[s]);
 /* 계약석 대기 순위 = 상담을 마친 순서 */
 const deskRank=v=>queue().findIndex(x=>x.id===v.id)+1;
 const whoStatus=x=>x.status==="상담중"&&x.consultant?"상담 중 · "+esc(x.consultant):x.status==="계약대기"&&x.calledDesk?"계약석 "+x.calledDesk+"번 진행 중":x.status==="계약대기"&&deskRank(x)?"계약석 대기 · "+deskRank(x)+"번째":x.status==="계약대기"?"삼성 계약석 안내":statusName(x.status);
@@ -1030,7 +1029,7 @@ function _render(){
   if(st.custView&&st.user&&st.view==="contract"&&st.step>=1&&!special()){$("#topbar").hidden=true;document.body.classList.add("has-bot");app.innerHTML=viewCustomer();bindCustomer();return;}
   $("#topbar").hidden=false;
   const allowed=st.user?ROLES[st.role]:[];
-  $("#tabs").innerHTML=allowed.map(v=>`<button class="tab" data-tab="${v}" aria-pressed="${st.view===v}"><span class="ls">${VIEWS[v]}</span><span class="ss">${({status:"현황",ledger:"대장",settings:"설정",guest:"방명록",consult:"상담",contract:"계약석",samsung:"삼성",station:"출력"})[v]||VIEWS[v]}</span>${v==="contract"&&queue().length?` <span class="chip think">${queue().length}</span>`:""}</button>`).join("");
+  $("#tabs").innerHTML=allowed.map(v=>`<button class="tab" data-tab="${v}" aria-pressed="${st.view===v}"><span class="ls">${VIEWS[v]}</span><span class="ss">${({status:"현황",ledger:"대장",settings:"설정",guest:"방명록",consult:"상담",contract:"계약석",station:"출력"})[v]||VIEWS[v]}</span>${v==="contract"&&queue().length?` <span class="chip think">${queue().length}</span>`:""}</button>`).join("");
   $$("[data-tab]").forEach(b=>b.onclick=()=>{if(st.view==="settings"&&S.stages.reduce((t,s)=>t+s.ratio,0)!==100){toast("납부 비율 합계를 100%로 맞춰 주세요.");return;}
     if(st.view==="contract"&&(st.amend||special())&&b.dataset.tab!=="contract"){toast(st.amend?"변경 계약 중입니다. [변경 취소]를 누르거나 끝까지 진행하세요.":"[닫기]를 누른 뒤 이동하세요.");return;}
     st.view=b.dataset.tab;render();window.scrollTo(0,0);});
@@ -1040,7 +1039,7 @@ function _render(){
   if(!st.user){app.innerHTML=viewLogin();bindLogin();return;}
   if(!allowed.includes(st.view))st.view=allowed[0];
   ({guest:()=>{app.innerHTML=viewGuestDesk();bindGuest(false);},consult:()=>{app.innerHTML=viewConsult();bindConsult();},
-    status:()=>{app.innerHTML=viewStatus();bindStatus();},samsung:()=>{app.innerHTML=viewSamsung();bindSamsung();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},station:()=>{app.innerHTML=viewStation();bindStation();},
+    status:()=>{app.innerHTML=viewStatus();bindStatus();},ledger:()=>{app.innerHTML=viewLedger();bindLedger();},settings:()=>{app.innerHTML=viewSettings();bindSettings();},station:()=>{app.innerHTML=viewStation();bindStation();},
     contract:()=>{const body=[viewQueue,viewItems,viewCust,viewPrint,viewPay][st.step]();const bar=botBar();if(bar)document.body.classList.add("has-bot");
       app.innerHTML=special()?`<div class="main" style="grid-template-columns:minmax(0,1fr)"><div style="min-width:0">${body}</div></div>${bar}`:`<div class="main"><div style="min-width:0">${body}</div>${sidePanel()}</div>${bar}`;bindContract();}})[st.view]();
 }
@@ -1051,10 +1050,10 @@ function viewLogin(){
   const row=(r,l)=>{const g=S.staff.filter(x=>x.role===r);return g.length?`<div class="field lgrp"><label>${l}</label><div class="row" style="gap:6px">${g.map(btn).join("")}</div></div>`:"";};
   return`<section class="panel login"><h2>로그인</h2>
   <p class="hint">태블릿 번호를 고르고 PIN을 누르세요. 기록에는 이름 대신 번호가 남습니다.</p>
-  ${row("상담","상담 실장")}${row("계약","계약석")}${row("안내","입구 안내")}${row("관리","관리")}${row("삼성","삼성 계약석")}${row("출력","출력 담당 PC (프린터 옆에 켜 두는 PC)")}
+  ${row("상담","상담 실장")}${row("계약","계약석")}${row("안내","입구 안내")}${row("관리","관리")}${row("출력","출력 담당 PC (프린터 옆에 켜 두는 PC)")}
   <div class="field" style="margin-top:14px"><label>PIN 4자리${st.pick?" · "+esc(st.pick):""}</label><div class="pin">${[0,1,2,3].map(i=>`<span class="${i<st.pin.length?"on":""}"></span>`).join("")}</div>
    <div class="pad">${["1","2","3","4","5","6","7","8","9","지움","0","←"].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join("")}</div></div>
-  <p class="note">검토용 PIN: 상담 N번 400N (상담 3번 → 4003) · 계약 N번 100N · 안내 5555 · 관리 최종태 0000, 최정은 0001 · 삼성 7777 · 출력 A 9001, B 9002</p></section>`;
+  <p class="note">검토용 PIN: 상담 N번 400N (상담 3번 → 4003) · 계약 N번 100N · 안내 5555 · 관리 최종태 0000, 최정은 0001 · 출력 A 9001, B 9002</p></section>`;
 }
 function bindLogin(){
   $$("[data-who]").forEach(b=>b.onclick=()=>{st.pick=b.dataset.who;st.pin="";render();});
@@ -1063,7 +1062,7 @@ function bindLogin(){
     /* 4자리가 되기 전에는 점만 바꾼다 (화면 전체를 다시 그리면 화면이 튐) */
     if(st.pin.length<4){$$(".pin span").forEach((d,i)=>d.classList.toggle("on",i<st.pin.length));return;}
     if(st.pin.length===4){const s=S.staff.find(x=>x.name===st.pick);
-      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.desk=s.role==="계약"?(s.no||1):9;if(s.stn){st.stn=s.stn;lsSet("oc_stn",s.stn);}st.view=s.role==="출력"?"station":s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="삼성"?"samsung":s.role==="관리"?"ledger":"guest";st.pin="";st.pick="";toast(`${s.name} 로그인`);}
+      if(s&&s.pin===st.pin){st.user=s.name;st.role=s.role;st.desk=s.role==="계약"?(s.no||1):9;if(s.stn){st.stn=s.stn;lsSet("oc_stn",s.stn);}st.view=s.role==="출력"?"station":s.role==="계약"?"contract":s.role==="상담"?"consult":s.role==="관리"?"ledger":"guest";st.pin="";st.pick="";toast(`${s.name} 로그인`);}
       else{st.pin="";toast("PIN이 맞지 않습니다.");}}
     render();});
 }
@@ -1107,7 +1106,7 @@ function viewGuestDesk(){
   <section class="panel"><h2>오늘 방문 ${list.length}세대</h2>
   <div class="field" style="margin:6px 0 12px"><label for="rv-q">재방문 고객 찾기 — 동·호수 또는 휴대폰 뒤 4자리 (QR을 다시 찍지 않아도 됩니다)</label><input id="rv-q" inputmode="numeric" placeholder="예: 1011203" value="${esc(st.rvq||"")}" autocomplete="off"><div id="rv-res">${revisitRes(st.rvq)}</div></div>
   <p class="hint">최근 등록 순. 상태는 상담·계약 단계에 따라 자동으로 바뀝니다. 보류·미결정 고객이 돌아오면 [다시 상담 대기로]를 누르세요.</p>
-  <div class="vlist">${list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow"><span>${noTag(v)}<b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"상담 대기 "+n+"번째":whoStatus(v)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · "+esc(v.consultant):""}${v.status==="보류"||v.status==="미결정"?` <button class="seg" data-rewait="${v.id}" style="padding:4px 10px;margin-left:6px">다시 상담 대기로</button>`:""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>'}</div></section></div>`;
+  <div class="vlist">${list.map(v=>{const n=wl.indexOf(v.id)+1;return`<div class="vrow"><span>${noTag(v)}<b>${esc(v.name)}</b> · ${v.unit?unitLabel(v.unit)+" "+v.type:"동·호 미확정"}</span><span class="chip ${statusChip(v.status)}">${n?"상담 대기 "+n+"번째":whoStatus(v)}</span><small>${hhmm(v.at)} 입장 · ${esc(viaLabel(v))}${v.consultant?" · "+esc(v.consultant):""}${v.status==="보류"||v.status==="미결정"||v.status==="삼성안내"?` <button class="seg" data-rewait="${v.id}" style="padding:4px 10px;margin-left:6px">다시 상담 대기로</button>`:""}</small></div>`;}).join("")||'<p class="empty">오늘 등록된 방문 세대가 없습니다.</p>'}</div></section></div>`;
 }
 /* v7.3 재방문: 이전 방문 기록을 찾아 QR 없이 오늘 입장번호를 새로 받고, 그때 체크한 내용을 이어 간다 */
 function revisitRes(q){q=(q||"").replace(/\D/g,"");if(q.length<4)return"";const td=visitDay();
@@ -1211,6 +1210,7 @@ function viewMe(){const m=st.me;
   else if(m.status==="상담중"){big="상담 중입니다";sub="";}
   else if(m.status==="보류"){big="상담을 잠시 멈췄습니다";sub="돌아오시면 입구 직원이나 상담 실장에게 말씀해 주세요.";}
   else if(m.status==="계약대기"){big=m.ahead?`계약석 대기 · 앞에 ${m.ahead}분`:"곧 계약석에서 부릅니다";sub="번호를 부르면 계약석으로 와 주세요.";}
+  else if(m.status==="삼성안내"){big="삼성 계약석으로 가 주세요";sub="삼성 품목은 삼성 직원이 직접 계약합니다.";}
   else if(m.status==="계약"){big="계약이 완료되었습니다";sub="감사합니다.";}
   else{big="방문해 주셔서 감사합니다";sub="궁금한 점은 상담 실장에게 문의해 주세요.";}
   return`<div class="guest-wrap"><div class="phone" style="text-align:center"><div style="color:var(--muted)">${esc(S.siteName)} 옵션 행사</div>
@@ -1250,7 +1250,7 @@ function revisitCard(v){const its=Object.values(v.items||{});
    <p class="hint">이전 방문 기록입니다. [재방문 등록]을 누르면 QR을 다시 찍지 않고 오늘 입장번호를 받으며, 그때 체크한 내용이 그대로 이어집니다.${v.status==="계약"?" 이미 계약한 세대의 추가·변경은 관리자가 관리대장에서 처리합니다.":""}</p>
    <div class="nav"><button class="btn" id="cv-revisit">재방문 등록</button></div>`;}
 function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;const its=Object.values(v.items||{});const had=its.filter(i=>i.state==="sel"||i.state==="think").length;
-  return`<h2>${noTag(v)}${esc(v.name)} <span class="chip think">${v.status==="미결정"?"미결정 · 다시 상담 가능":v.status==="보류"?"보류 · 돌아오면 이어서 상담":"대기 "+n+"번째 · "+waitTxt(v)}</span></h2>
+  return`<h2>${noTag(v)}${esc(v.name)} <span class="chip think">${v.status==="미결정"?"미결정 · 다시 상담 가능":v.status==="삼성안내"?"삼성 안내 · 우리 품목 추가 시 다시 상담":v.status==="보류"?"보류 · 돌아오면 이어서 상담":"대기 "+n+"번째 · "+waitTxt(v)}</span></h2>
    <div class="kv" style="margin:10px 0"><span>동·호수</span><b>${v.unit?unitLabel(v.unit)+" · "+v.type:"미확정 (상담 중 확인)"}</b><span>휴대폰</span><b class="num">${esc(v.phone||"-")}</b><span>입장</span><b>${hhmm(v.at)} · ${esc(viaLabel(v))}</b></div>
    ${had?`<div class="info">이전에 체크한 내용이 있습니다 (선택 ${its.filter(i=>i.state==="sel").length} · 고민 중 ${its.filter(i=>i.state==="think").length}). 시작하면 그대로 이어집니다.</div>`:""}
    ${n>1?`<p class="note">앞에 ${n-1}세대가 더 기다리고 있습니다.</p>`:""}
@@ -1258,7 +1258,7 @@ function startCard(v){const n=waitList().findIndex(x=>x.id===v.id)+1;const its=O
    <p class="note">누르면 다른 태블릿에서 '${esc(st.user)} 상담 중'으로 바뀌어 같은 고객에게 겹쳐 가지 않습니다.</p>`;}
 function consultSheet(v){
   if(v.date!==visitDay())return revisitCard(v);
-  if(["방문","미결정","보류"].includes(v.status))return startCard(v);
+  if(["방문","미결정","보류","삼성안내"].includes(v.status))return startCard(v);
   if(v.status==="상담중"&&v.consultant!==st.user)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">${esc(v.consultant||"다른 실장")}이(가) 상담 중입니다.</p><div class="nav"><button class="btn" id="cv-take">이어서 상담하기</button></div><p class="note">담당 실장이 자리를 비워야 할 때만 쓰세요. 누르면 담당이 ${esc(st.user)}(으)로 바뀌고, 지금까지 체크한 내용은 그대로 이어집니다.</p>`;
   if(v.status==="계약대기"&&v.calledDesk)return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약석 ${v.calledDesk}번에서 진행 중입니다. 바꿀 내용은 계약석에 말씀해 주세요.</p>`;
   if(v.status==="계약")return`<h2>${noTag(v)}${esc(v.name)}</h2><p class="hint">계약이 끝난 세대입니다. 추가·변경은 관리자가 관리대장에서 계약석으로 불러와 처리합니다.</p>`;
@@ -1291,7 +1291,7 @@ function bindConsult(){
   const sb=$("#cv-start");if(sb)sb.onclick=async()=>{const id=st.cv;sb.disabled=true;sb.textContent="확인 중…";
     try{if(API)await syncPull();}catch(e){}
     const x=VISITS.find(y=>y.id===id);
-    if(!x||!["방문","미결정","보류"].includes(x.status)){toast(x&&x.consultant?`이미 ${x.consultant}이(가) 상담을 시작했습니다. 다음 순번 고객을 고르세요.`:"이미 상담이 시작된 고객입니다.");st.cv=null;render();return;}
+    if(!x||!["방문","미결정","보류","삼성안내"].includes(x.status)){toast(x&&x.consultant?`이미 ${x.consultant}이(가) 상담을 시작했습니다. 다음 순번 고객을 고르세요.`:"이미 상담이 시작된 고객입니다.");st.cv=null;render();return;}
     x.status="상담중";x.consultant=st.user;x.startAt=x.startAt||Date.now();delete x.holdAt;toast(`${x.name} 고객 상담을 시작합니다.`);render();};
   const v=VISITS.find(x=>x.id===st.cv);if(!v)return;
   const tk=$("#cv-take");if(tk)tk.onclick=()=>{const from=v.consultant;v.consultant=st.user;(v.handoff=v.handoff||[]).push({at:Date.now(),from,to:st.user});toast(`${from} 상담을 이어받았습니다.`);render();};
@@ -1309,10 +1309,9 @@ function bindConsult(){
   $$("[data-memo]").forEach(i=>{const save=()=>{const vv=VISITS.find(x=>x.id===st.cv)||v;const it=vv.items[i.dataset.memo];if(!it)return;it.memo=i.value;afterRender();};i.oninput=()=>{clearTimeout(i._t);i._t=setTimeout(save,500);};i.onchange=save;i.onblur=save;});
   const d=$("#cv-done");if(d)d.onclick=()=>{$$("[data-memo]").forEach(i=>{const vv=VISITS.find(x=>x.id===st.cv)||v;if(vv.items[i.dataset.memo])vv.items[i.dataset.memo].memo=i.value;});const vals=Object.values(v.items);
     if(!vals.some(it=>it.state==="sel"&&Object.keys(it.opts).length)&&!vals.some(it=>it.state==="think")){toast("선택하거나 고민 중인 품목이 하나 이상 있어야 합니다.");return;}
-    if(hasSS(v)&&!v.samsung)v.samsung={status:"대기",at:Date.now()};
-    if(v.status!=="계약대기"){v.status="계약대기";v.queueAt=Date.now();delete v.back;
-      if(!hasOurs(v))toast("삼성 품목만 선택했습니다. 고객을 삼성 계약석으로 안내해 주세요.");
-      else toast(`계약석 대기 ${queue().length}번째로 등록했습니다.${hasSS(v)?" 삼성 품목은 삼성 계약석에서 따로 계약합니다.":""}`);}else toast("수정했습니다.");
+    if(!hasOurs(v)){v.status="삼성안내";v.ssAt=Date.now();delete v.back;toast("삼성 품목만 선택했습니다. 고객을 삼성 계약석으로 안내해 주세요. (우리 계약석 대기에는 들어가지 않습니다)");}
+     else if(v.status!=="계약대기"){v.status="계약대기";v.queueAt=Date.now();delete v.back;
+       toast(`계약석 대기 ${queue().length}번째로 등록했습니다.${hasSS(v)?" 삼성 품목은 삼성 계약석에서 따로 계약합니다.":""}`);}else toast("수정했습니다.");
     st.cv=null;render();};
 }
 
