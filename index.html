@@ -524,6 +524,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* ===== v7.4.4 휴대폰: 대기열 줄 버튼을 아래로 ===== */
 .noTag{white-space:nowrap}
 .lrow{grid-template-columns:minmax(0,1fr) 68px}
+@media (max-width:700px){.unit-hit{height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .lrow .filed{white-space:normal;line-height:1.3;padding:4px 6px;text-align:center}
 @media (max-width:700px){
  .qrow{grid-template-columns:32px minmax(0,1fr);gap:8px 10px;padding:10px}
@@ -541,7 +542,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.4 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.5 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -817,7 +818,14 @@ function syncBadge(){const el=document.getElementById("syncBadge");if(!el)return
   if(!API){el.textContent="오프라인 시안 (샘플)";el.className="sync off";return;}
   const n=Object.keys(SYNC.pending).length;
   if(SYNC.ok===false){el.textContent=`● 연결 끊김${n?` · 보낼 기록 ${n}건 보관 중`:""}`;el.className="sync bad";return;}
-  const sec=SYNC.at?Math.round((Date.now()-SYNC.at)/1000):null;el.textContent=n?`● 저장 중 ${n}건`:`● 시트 연결됨${sec!=null?` · ${sec}초 전`:""}`;el.className="sync ok";}
+  const sec=SYNC.at?Math.round((Date.now()-SYNC.at)/1000):null;const ph=window.matchMedia&&matchMedia("(max-width:700px)").matches;el.textContent=n?`● 저장 중 ${n}건`:`● 시트 연결됨${sec!=null&&!ph?` · ${sec}초 전`:""}`;el.className="sync ok";}
+/* v7.4.5 아이폰 사파리: 입력하는 순간 화면이 크게 튀면 입력 직전 위치로 되돌린다 */
+(function(){let y=null,t=0;
+ const keep=()=>{if(y!=null&&Date.now()-t<700&&Math.abs(window.scrollY-y)>120)window.scrollTo(0,y);};
+ document.addEventListener("beforeinput",e=>{const el=e.target;if(el&&/INPUT|TEXTAREA/.test(el.tagName)&&el.type!=="checkbox"){y=window.scrollY;t=Date.now();}},true);
+ document.addEventListener("input",()=>{requestAnimationFrame(keep);setTimeout(keep,150);setTimeout(keep,450);},true);
+ window.addEventListener("scroll",keep,{passive:true});
+})();
 function initSync(){
   if(!API)return;
   try{const p=JSON.parse(lsGet("oc_pending")||"{}");Object.assign(SYNC.pending,p);}catch(e){}
