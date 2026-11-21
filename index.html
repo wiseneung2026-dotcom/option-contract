@@ -469,7 +469,7 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
  #stnPapers{position:static;width:auto}
 }
 /* ===== v7.4.2 휴대폰 화면 ===== */
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.papers,.paper{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .tab .ss,.step .ss{display:none}
 .pv-toggle{display:none}
 @media (max-width:700px){
@@ -481,9 +481,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .sync{font-size:11px;padding:1px 6px}
  #userBox{font-size:12px;gap:6px}
  #userBox .seg{padding:4px 8px;font-size:12px}
- .tabs{flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;margin-left:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+ .tabs{flex:1 0 100%;flex-wrap:wrap;gap:6px;margin-left:0}
  .tabs::-webkit-scrollbar{display:none}
- .tab{flex:0 0 auto;white-space:nowrap;padding:8px 12px;font-size:14px}
+ .tab{flex:0 0 auto;white-space:nowrap;padding:8px 10px;font-size:14px}
  .tab .ls{display:none}.tab .ss{display:inline}
  .steps{gap:3px;margin-top:8px;overflow:visible}
  .step{flex:1 1 0;min-width:0;padding:7px 4px;text-align:center;font-size:13px}
@@ -543,7 +543,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.8 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.9 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -842,7 +842,7 @@ function syncBadge(){const el=document.getElementById("syncBadge");if(!el)return
 })();
 /* v7.4.6 아이폰 사파리: 입력 중인 칸(주소 검색 창 포함)이 화면 밖으로 밀려나면 직전 위치로 되돌린다.
  * 손가락으로 직접 스크롤한 경우(1.5초 이내 터치)는 건드리지 않는다. 한글 조합 입력·외부 창(iframe)도 대응 */
-(function(){if(window.QF&&QF.noguard)return;let good=null,touch=0;
+(function(){if(!new URLSearchParams(location.search).has("guard"))return;let good=null,touch=0;
  const tgt=()=>{const a=document.activeElement;return a&&((/INPUT|TEXTAREA/.test(a.tagName)&&!/checkbox|radio|button|submit/.test(a.type))||a.tagName==="IFRAME")?a:null;};
  const vis=el=>{const r=el.getBoundingClientRect(),v=window.visualViewport,top=v?v.offsetTop:0,h=v?v.height:innerHeight;return r.bottom>top+20&&r.top<top+h-20;};
  const chk=()=>{const el=tgt();if(!el){good=null;return;}
