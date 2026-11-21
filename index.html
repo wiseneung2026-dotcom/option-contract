@@ -468,6 +468,45 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
  body.stn-mode .wrap{display:none !important}
  #stnPapers{position:static;width:auto}
 }
+/* ===== v7.4.2 휴대폰 화면 ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.tab .ss,.step .ss{display:none}
+.pv-toggle{display:none}
+@media (max-width:700px){
+ .top{position:static;padding-block:8px 6px}
+ .brand{gap:4px 8px;align-items:center}
+ .brand h1{font-size:15px}
+ .brand .site{display:none}
+ .sample{font-size:11px;padding:1px 6px}
+ .sync{font-size:11px;padding:1px 6px}
+ #userBox{font-size:12px;gap:6px}
+ #userBox .seg{padding:4px 8px;font-size:12px}
+ .tabs{flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;margin-left:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+ .tabs::-webkit-scrollbar{display:none}
+ .tab{flex:0 0 auto;white-space:nowrap;padding:8px 12px;font-size:14px}
+ .tab .ls{display:none}.tab .ss{display:inline}
+ .steps{gap:3px;margin-top:8px;overflow:visible}
+ .step{flex:1 1 0;min-width:0;padding:7px 4px;text-align:center;font-size:13px}
+ .step .sl{display:none}
+ .step.on{flex:3.2 1 0}
+ .step.on .sl{display:inline;margin-left:4px}
+ .step.on .ss{display:inline}
+ .flow-step{grid-template-columns:28px minmax(0,1fr)}
+ .flow-step>.btn,.flow-step>button{grid-column:1/-1;width:100%}
+ .flow-step>span:empty{display:none}
+ .pv-toggle{display:block;width:100%;margin:12px 0 0;padding:12px}
+ .papers:not(.pv-open) .pclip{height:0;overflow:hidden}
+ .papers:not(.pv-open) .pwrap{margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+ .papers:not(.pv-open) .pbar{margin:0}
+ .botbar{gap:6px;padding-inline:8px}
+ .botbar .btn{padding:14px 6px;font-size:15px}
+}
+.pclip{overflow:hidden}
+@media print{
+ .pclip{height:auto !important;overflow:visible !important}
+ .paper{transform:none !important;margin:0 !important}
+ .pv-toggle{display:none !important}
+}
 @page{size:A4;margin:8mm}
 @media print{
  html,body{background:#fff !important}
@@ -491,7 +530,7 @@ body.has-bot .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="brand">
       <h1>유상옵션 통합계약</h1>
       <span class="site" id="siteLabel"></span>
-      <span class="sample">검토용 시안 v7.4.1 · 태블릿</span>
+      <span class="sample">검토용 시안 v7.4.2 · 태블릿</span>
       <span id="syncBadge" class="sync"></span>
       <span id="userBox"></span>
       <div class="tabs" role="group" aria-label="화면" id="tabs"></div>
@@ -991,7 +1030,7 @@ function _render(){
   if(st.custView&&st.user&&st.view==="contract"&&st.step>=1&&!special()){$("#topbar").hidden=true;document.body.classList.add("has-bot");app.innerHTML=viewCustomer();bindCustomer();return;}
   $("#topbar").hidden=false;
   const allowed=st.user?ROLES[st.role]:[];
-  $("#tabs").innerHTML=allowed.map(v=>`<button class="tab" data-tab="${v}" aria-pressed="${st.view===v}">${VIEWS[v]}${v==="contract"&&queue().length?` <span class="chip think">${queue().length}</span>`:""}</button>`).join("");
+  $("#tabs").innerHTML=allowed.map(v=>`<button class="tab" data-tab="${v}" aria-pressed="${st.view===v}"><span class="ls">${VIEWS[v]}</span><span class="ss">${({status:"현황",ledger:"대장",settings:"설정",guest:"방명록",consult:"상담",contract:"계약석",samsung:"삼성",station:"출력"})[v]||VIEWS[v]}</span>${v==="contract"&&queue().length?` <span class="chip think">${queue().length}</span>`:""}</button>`).join("");
   $$("[data-tab]").forEach(b=>b.onclick=()=>{if(st.view==="settings"&&S.stages.reduce((t,s)=>t+s.ratio,0)!==100){toast("납부 비율 합계를 100%로 맞춰 주세요.");return;}
     if(st.view==="contract"&&(st.amend||special())&&b.dataset.tab!=="contract"){toast(st.amend?"변경 계약 중입니다. [변경 취소]를 누르거나 끝까지 진행하세요.":"[닫기]를 누른 뒤 이동하세요.");return;}
     st.view=b.dataset.tab;render();window.scrollTo(0,0);});
@@ -1284,7 +1323,7 @@ const STEPS=["대기열","품목 확인","계약자 정보","출력·서명","�
 /* 재출력·검증용 인쇄: 계약 흐름 밖에서 출력 화면만 쓰는 상태 */
 const special=()=>!!(st.reprint||st.ptest);
 function renderSteps(){const el=$("#steps");if(!st.user||st.view!=="contract"||special()){el.innerHTML="";return;}
-  el.innerHTML=STEPS.map((s,i)=>`<button class="step ${i===st.step?"on":""} ${i<st.step?"done":""}" data-go="${i}" ${i>maxStep()?"disabled":""}><b>${i+1}</b>${s}</button>`).join("");
+  el.innerHTML=STEPS.map((s,i)=>`<button class="step ${i===st.step?"on":""} ${i<st.step?"done":""}" data-go="${i}" ${i>maxStep()?"disabled":""}><b>${i+1}</b><span class="ss">/${STEPS.length}</span><span class="sl">${s}</span></button>`).join("");
   $$("[data-go]").forEach(b=>b.onclick=()=>{st.step=+b.dataset.go;render();});}
 function maxStep(){if(!utype())return 0;if(!selected().length)return 1;if(!custOK())return 2;if(!st.printed)return 3;return 4;}
 const custOK=()=>unitKey()&&st.cust.name.trim()&&/^01\d[-\s]?\d{3,4}[-\s]?\d{4}$/.test(st.cust.phone.trim())&&(!st.cust.birth||/^\d{6}$/.test(st.cust.birth))&&(curVisit()||st.consent1)&&st.consent2;
@@ -1358,10 +1397,11 @@ function sidePanel(){
 /* 계약석 전 단계 하단 고정 버튼: 좁은 화면에서도 이전·다음이 항상 보인다 */
 function botBar(){
   if(st.step===0)return"";
-  if(special())return`<div class="botbar"><button class="btn ghost" id="bb-close">닫기</button><button class="btn" id="bb-print">전체 인쇄</button></div>`;
+  const prLab=()=>{const to=typeof printRoute==="function"?printRoute().to:null;return (st.printed&&!special()?"다시 인쇄":"전체 인쇄")+(to?" · 프린터 "+to:"");};
+  if(special())return`<div class="botbar"><button class="btn ghost" id="bb-close">닫기</button><button class="btn" id="bb-print">${prLab()}</button></div>`;
   return`<div class="botbar">${st.step>=2?'<button class="btn ghost" id="prev">← 이전</button>':""}<button class="btn ghost" id="toQueue">${st.amend?"변경 취소":"대기열로"}</button>
    ${st.step<=2?'<button class="btn" id="custView" style="background:var(--accent)">고객 보기</button>':""}
-   ${st.step<4?`<button class="btn" id="next" ${st.step>=maxStep()?"disabled":""}>다음 →</button>`:`<button class="btn" id="confirm" ${payOK()?"":"disabled"}>${st.amend?"변경 확정":"계약 확정 · 고객용 교부"}</button>`}</div>`;
+   ${st.step===3&&!st.printed?`<button class="btn" id="bb-print">${prLab()}</button>`:st.step<4?`<button class="btn" id="next" ${st.step>=maxStep()?"disabled":""}>다음 →</button>`:`<button class="btn" id="confirm" ${payOK()?"":"disabled"}>${st.amend?"변경 확정":"계약 확정 · 고객용 교부"}</button>`}</div>`;
 }
 function viewItems(){
   const t=utype();const prev=LEDGER.filter(l=>l.unit===unitKey()&&l.status!=="취소");const v=curVisit();
@@ -1490,18 +1530,18 @@ function viewPrint(){
    ${(()=>{if(st.ptest)return"";const miss=printCos().filter(co=>/입력 예정/.test([COMPANIES[co].bank,COMPANIES[co].tel,COMPANIES[co].bizno,COMPANIES[co].ceo].join(" ")));return miss.length?`<div class="alert">업체 정보(사업자번호·계좌·전화 등)가 아직 비어 있는 공급자: <b>${esc(miss.map(co=>COMPANIES[co].name).join(", "))}</b> — 계약서에 '(입력 예정)'으로 찍힙니다. 실제 계약 전에 채워야 합니다.</div>`:"";})()}
    <div class="alert" id="fitWarn" hidden>붉은 테두리 문서는 한 장을 넘어 글자를 줄였는데도 넘칩니다. 품목 수나 약관 길이를 확인하세요.</div>
    <p class="note">용지가 걸리면 아래 문서 위의 [이 장만 인쇄]로 그 장만 다시 뽑을 수 있습니다.</p></section>`;
-  return flow+`<div class="papers">${docs.map((d,i)=>`<div class="pwrap" data-pi="${i}"><div class="pbar"><span><b>${i+1} / ${docs.length}</b> · ${esc(d.t)}</span><button class="seg" data-p1="${i}" style="padding:6px 12px">이 장만 인쇄</button></div>${d.h}</div>`).join("")}</div>`;
+  return flow+`<button class="seg pv-toggle" id="pvToggle">${st.pvOpen?"미리보기 접기":"미리보기 펼치기 (계약서 "+docs.length+"장)"}</button><div class="papers ${st.pvOpen?"pv-open":""}">${docs.map((d,i)=>`<div class="pwrap" data-pi="${i}"><div class="pbar"><span><b>${i+1} / ${docs.length}</b> · ${esc(d.t)}</span><button class="seg" data-p1="${i}" style="padding:6px 12px">이 장만 인쇄</button></div><div class="pclip">${d.h}</div></div>`).join("")}</div>`;
 }
 /* 한 장 맞춤: 넘치면 약관 글자를 줄이고, 그래도 넘치면 문서 전체를 조금 축소한다. 그 뒤 화면 폭에 맞춰 미리보기를 줄인다 */
 function fitPapers(){
   const wrap=$(".papers");if(!wrap)return;const mm=96/25.4,H=272*mm;let over=0;
-  $$(".paper").forEach(p=>{p.style.zoom="";p.classList.remove("over");const inn=p.querySelector(".paper-in");inn.style.zoom="";inn.style.width="";inn.style.height="";inn.style.minHeight="";inn.style.removeProperty("--tf");
+  $$(".paper").forEach(p=>{p.style.zoom="";p.style.transform="";p.style.margin="";p.classList.remove("over");const inn=p.querySelector(".paper-in");inn.style.zoom="";inn.style.width="";inn.style.height="";inn.style.minHeight="";inn.style.removeProperty("--tf");
     let f=parseFloat(getComputedStyle(inn).getPropertyValue("--tf"))||8;p.classList.remove("tight");
     const shrink=min=>{while(inn.scrollHeight>H+1&&f>min+.01){f-=.2;inn.style.setProperty("--tf",f.toFixed(1)+"pt");}};
     shrink(7.2);if(inn.scrollHeight>H+1){p.classList.add("tight");shrink(6.6);}
     if(inn.scrollHeight>H+1){const z=Math.max(.82,H/inn.scrollHeight-.01);inn.style.zoom=z.toFixed(3);inn.style.width=(194/z).toFixed(1)+"mm";inn.style.height=(272/z).toFixed(1)+"mm";inn.style.minHeight=(272/z).toFixed(1)+"mm";
       if(inn.scrollHeight>272/z*mm+2){p.classList.add("over");over++;}}});
-  const z=Math.min(1,(wrap.clientWidth-4)/(210*mm));$$(".paper").forEach(p=>{p.style.zoom=z<1?z.toFixed(3):"";});
+  const z=Math.min(1,(wrap.clientWidth-4)/(210*mm));$$(".paper").forEach(p=>{if(z<1){const w=p.offsetWidth,h=p.offsetHeight;p.style.transformOrigin="0 0";p.style.transform="scale("+z.toFixed(4)+")";p.style.margin="0 "+(-w*(1-z)).toFixed(1)+"px "+(-h*(1-z)).toFixed(1)+"px 0";}});
   const w=$("#fitWarn");if(w)w.hidden=!over;
 }
 function doPrint(solo){
@@ -1570,6 +1610,7 @@ function bindContract(){
   const cf=$("#confirm");if(cf)cf.onclick=saveContract;
   const n=$("#next");if(n)n.onclick=()=>{st.step++;render();window.scrollTo(0,0);};
   const p=$("#prev");if(p)p.onclick=()=>{st.step--;render();window.scrollTo(0,0);};
+  const pvt=$("#pvToggle");if(pvt)pvt.onclick=()=>{st.pvOpen=!st.pvOpen;const w=$(".papers");if(w)w.classList.toggle("pv-open",st.pvOpen);pvt.textContent=st.pvOpen?"미리보기 접기":"미리보기 펼치기 (계약서 "+$$(".pwrap").length+"장)";fitPapers();};
   if(st.step===3)fitPapers();
 }
 function refreshNav(){const n=$("#next");if(n)n.disabled=st.step>=maxStep();renderSteps();}
